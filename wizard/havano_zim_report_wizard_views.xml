@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_havano_zim_report_wizard_form" model="ir.ui.view">
+        <field name="name">havano.zim.report.wizard.form</field>
+        <field name="model">havano.zim.report.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Select Pay Run">
+                <group>
+                    <field name="report_type" invisible="1"/>
+                    <field name="payslip_run_id" options="{'no_create': True}"/>
+                </group>
+                <footer>
+                    <button name="action_generate_report" string="View Report" type="object" class="btn-primary"/>
+                    <button name="action_print_report" string="Print PDF" type="object" class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Wizard Actions mapped from Menus -->
+    <record id="action_wizard_nec_report" model="ir.actions.act_window">
+        <field name="name">NEC Report</field>
+        <field name="res_model">havano.zim.report.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="context">{'default_report_type': 'nec'}</field>
+    </record>
+
+    <record id="action_wizard_nssa_p4_report" model="ir.actions.act_window">
+        <field name="name">NSSA P4 Report</field>
+        <field name="res_model">havano.zim.report.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="context">{'default_report_type': 'nssa_p4'}</field>
+    </record>
+
+    <record id="action_wizard_nssa_employer_report" model="ir.actions.act_window">
+        <field name="name">NSSA Report Employer</field>
+        <field name="res_model">havano.zim.report.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="context">{'default_report_type': 'nssa_employer'}</field>
+    </record>
+
+    <record id="action_wizard_payroll_summary" model="ir.actions.act_window">
+        <field name="name">Payroll Summary Report</field>
+        <field name="res_model">havano.zim.report.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="context">{'default_report_type': 'summary'}</field>
+    </record>
+
+    <record id="action_wizard_salary_registry" model="ir.actions.act_window">
+        <field name="name">Salary Registry Report</field>
+        <field name="res_model">havano.zim.report.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="context">{'default_report_type': 'registry'}</field>
+    </record>
+
+    <!-- Action Menu (Cog) Button for Pivot/List views -->
+    <record id="action_print_salary_registry_from_lines" model="ir.actions.server">
+        <field name="name">Print PDF</field>
+        <field name="model_id" ref="hr_payroll.model_hr_payslip_line"/>
+        <field name="binding_model_id" ref="hr_payroll.model_hr_payslip_line"/>
+        <field name="binding_view_types">list,pivot</field>
+        <field name="state">code</field>
+        <field name="code">
+if records:
+    run = records[0].slip_id.payslip_run_id
+    if run:
+        wizard = env['havano.zim.report.wizard'].create({
+            'payslip_run_id': run.id,
+            'report_type': 'registry'
+        })
+        action = env.ref('havano_payroll.action_report_salary_registry').report_action(wizard)
+        action.update({'close_on_report_download': True})
+        </field>
+    </record>
+</odoo>

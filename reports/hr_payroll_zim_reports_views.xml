@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============================================== -->
+    <!-- NEC REPORT -->
+    <!-- ============================================== -->
+    <record id="view_havano_nec_report_tree" model="ir.ui.view">
+        <field name="name">havano.nec.report.tree</field>
+        <field name="model">havano.nec.report</field>
+        <field name="arch" type="xml">
+            <list string="NEC Report" create="false" edit="false" delete="false">
+                <header>
+                    <button name="action_print_report" string="Print PDF" type="object" display="always" class="btn-primary"/>
+                </header>
+                <field name="payslip_run_id" column_invisible="1"/>
+                <field name="hao_allow_multi_payroll_currency" column_invisible="1"/>
+                <field name="surname"/>
+                <field name="first_names"/>
+                <field name="date_from"/>
+                <field name="date_to"/>
+                <field name="nec_earnings"/>
+                <field name="sec_nec_earnings" column_invisible="not context.get('hao_allow_multi_payroll_currency')"/>
+                <field name="employee_contribution"/>
+                <field name="sec_employee_contribution" column_invisible="not context.get('hao_allow_multi_payroll_currency')"/>
+                <field name="employer_contribution"/>
+                <field name="sec_employer_contribution" column_invisible="not context.get('hao_allow_multi_payroll_currency')"/>
+                <field name="total_nec"/>
+                <field name="sec_total_nec" column_invisible="not context.get('hao_allow_multi_payroll_currency')"/>
+                <field name="company_id" column_invisible="True"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_havano_nec_report_search" model="ir.ui.view">
+        <field name="name">havano.nec.report.search</field>
+        <field name="model">havano.nec.report</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="first_names"/>
+                <field name="payslip_run_id"/>
+                <field name="date_from"/>
+                <field name="date_to"/>
+                <filter string="Current Month" name="current_month" domain="[('date_from', '&gt;=', (context_today().replace(day=1)).strftime('%Y-%m-%d')), ('date_from', '&lt;=', (context_today() + relativedelta(day=31)).strftime('%Y-%m-%d'))]"/>
+                <group>
+                    <filter string="Pay Run" name="group_batch" context="{'group_by':'payslip_run_id'}"/>
+                    <filter string="Employee" name="group_employee" context="{'group_by':'employee_id'}"/>
+                    <filter string="Period" name="group_period" context="{'group_by':'date_from:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_havano_nec_report_tree_only" model="ir.actions.act_window">
+        <field name="name">NEC Report</field>
+        <field name="res_model">havano.nec.report</field>
+        <field name="view_mode">list,pivot</field>
+        <field name="search_view_id" ref="view_havano_nec_report_search"/>
+    </record>
+
+
+    <!-- ============================================== -->
+    <!-- NSSA P4 REPORT -->
+    <!-- ============================================== -->
+    <record id="view_havano_nssa_p4_report_tree" model="ir.ui.view">
+        <field name="name">havano.nssa.p4.report.tree</field>
+        <field name="model">havano.nssa.p4.report</field>
+        <field name="arch" type="xml">
+            <list string="NSSA P4 Report" create="false" edit="false" delete="false">
+                <header>
+                    <button name="action_print_report" string="Print PDF" type="object" display="always" class="btn-primary"/>
+                </header>
+                <field name="payslip_run_id" column_invisible="1"/>
+                <field name="hao_allow_multi_payroll_currency" column_invisible="1"/>
+                <field name="surname"/>
+                <field name="first_names"/>
+                <field name="date_from"/>
+                <field name="date_to"/>
+                <field name="insurable_earnings"/>
+                <field name="sec_insurable_earnings" column_invisible="not context.get('hao_allow_multi_payroll_currency')"/>
+                <field name="current_contributions"/>
+                <field name="sec_current_contributions" column_invisible="not context.get('hao_allow_multi_payroll_currency')"/>
+                <field name="arrears"/>
+                <field name="prepayments"/>
+                <field name="surcharge"/>
+                <field name="total_payment"/>
+                <field name="sec_total_payment" column_invisible="not context.get('hao_allow_multi_payroll_currency')"/>
+                <field name="employer_payment"/>
+                <field name="sec_employer_payment" column_invisible="not context.get('hao_allow_multi_payroll_currency')"/>
+                <field name="company_id" column_invisible="True"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_havano_nssa_p4_report_search" model="ir.ui.view">
+        <field name="name">havano.nssa.p4.report.search</field>
+        <field name="model">havano.nssa.p4.report</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="first_names"/>
+                <field name="payslip_run_id"/>
+                <field name="date_from"/>
+                <field name="date_to"/>
+                <filter string="Current Month" name="current_month" domain="[('date_from', '&gt;=', (context_today().replace(day=1)).strftime('%Y-%m-%d')), ('date_from', '&lt;=', (context_today() + relativedelta(day=31)).strftime('%Y-%m-%d'))]"/>
+                <group>
+                    <filter string="Pay Run" name="group_batch" context="{'group_by':'payslip_run_id'}"/>
+                    <filter string="Employee" name="group_employee" context="{'group_by':'employee_id'}"/>
+                    <filter string="Period" name="group_period" context="{'group_by':'date_from:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_havano_nssa_p4_report_tree_only" model="ir.actions.act_window">
+        <field name="name">NSSA P4 Report</field>
+        <field name="res_model">havano.nssa.p4.report</field>
+        <field name="view_mode">list,pivot</field>
+        <field name="search_view_id" ref="view_havano_nssa_p4_report_search"/>
+    </record>
+
+
+    <!-- ============================================== -->
+    <!-- NSSA REPORT EMPLOYER -->
+    <!-- ============================================== -->
+    <record id="view_havano_nssa_employer_report_tree" model="ir.ui.view">
+        <field name="name">havano.nssa.employer.report.tree</field>
+        <field name="model">havano.nssa.employer.report</field>
+        <field name="arch" type="xml">
+            <list string="NSSA Report Employer" create="false" edit="false" delete="false">
+                <header>
+                    <button name="action_print_report" string="Print PDF" type="object" display="always" class="btn-primary"/>
+                </header>
+                <field name="payslip_run_id" column_invisible="1"/>
+                <field name="hao_allow_multi_payroll_currency" column_invisible="1"/>
+                <field name="first_name"/>
+                <field name="surname"/>
+                <field name="period"/>
+                <field name="nssa_usd_employee"/>
+                <field name="nssa_zig_employee" column_invisible="not context.get('hao_allow_multi_payroll_currency')"/>
+                <field name="nssa_usd_employer"/>
+                <field name="nssa_zig_employer" column_invisible="not context.get('hao_allow_multi_payroll_currency')"/>
+                <field name="company_id" column_invisible="True"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_havano_nssa_employer_report_search" model="ir.ui.view">
+        <field name="name">havano.nssa.employer.report.search</field>
+        <field name="model">havano.nssa.employer.report</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="first_name"/>
+                <field name="payslip_run_id"/>
+                <field name="period"/>
+                <group>
+                    <filter string="Pay Run" name="group_batch" context="{'group_by':'payslip_run_id'}"/>
+                    <filter string="Employee" name="group_employee" context="{'group_by':'employee_id'}"/>
+                    <filter string="Period" name="group_period" context="{'group_by':'period'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_havano_nssa_employer_report_tree_only" model="ir.actions.act_window">
+        <field name="name">NSSA Report Employer</field>
+        <field name="res_model">havano.nssa.employer.report</field>
+        <field name="view_mode">list,pivot</field>
+        <field name="search_view_id" ref="view_havano_nssa_employer_report_search"/>
+    </record>
+
+    <!-- MENUS -->
+    <menuitem id="menu_hr_payroll_report_zim" name="Havano Zimbabwean Reports" parent="hr_payroll.menu_hr_payroll_report" sequence="100"/>
+    <menuitem id="menu_havano_nec_report" name="NEC Report" parent="menu_hr_payroll_report_zim" action="action_wizard_nec_report" sequence="10"/>
+    <menuitem id="menu_havano_nssa_p4_report" name="NSSA P4 Report" parent="menu_hr_payroll_report_zim" action="action_wizard_nssa_p4_report" sequence="20"/>
+    <menuitem id="menu_havano_nssa_employer_report" name="NSSA Report Employer" parent="menu_hr_payroll_report_zim" action="action_wizard_nssa_employer_report" sequence="30"/>
+    <menuitem id="menu_havano_payroll_summary" name="Payroll Summary Report" parent="menu_hr_payroll_report_zim" action="action_wizard_payroll_summary" sequence="40"/>
+    <menuitem id="menu_havano_salary_registry" name="Salary Registry Report" parent="menu_hr_payroll_report_zim" action="action_wizard_salary_registry" sequence="50"/>
+
+</odoo>

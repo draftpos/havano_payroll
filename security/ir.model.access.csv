@@ -1,0 +1,9 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_zimra_tax_table_user,zimra.tax.table.user,model_zimra_tax_table,base.group_user,1,1,1,1
+access_zimra_tax_table_manager,zimra.tax.table.manager,model_zimra_tax_table,hr.group_hr_manager,1,1,1,1
+access_havano_payroll_zimra_tax_table_user,havano_payroll.zimra_tax_table,model_zimra_tax_table,base.group_user,1,0,0,0
+access_havano_payroll_nec_report,havano_payroll.nec_report,model_havano_nec_report,hr_payroll.group_hr_payroll_user,1,0,0,0
+access_havano_payroll_nssa_p4_report,havano_payroll.nssa_p4_report,model_havano_nssa_p4_report,hr_payroll.group_hr_payroll_user,1,0,0,0
+access_havano_payroll_nssa_employer_report,havano_payroll.nssa_employer_report,model_havano_nssa_employer_report,hr_payroll.group_hr_payroll_user,1,0,0,0
+access_havano_zim_report_wizard_manager,havano.zim.report.wizard.manager,model_havano_zim_report_wizard,hr_payroll.group_hr_payroll_manager,1,1,1,1
+access_havano_zim_report_wizard_user,havano.zim.report.wizard.user,model_havano_zim_report_wizard,hr_payroll.group_hr_payroll_user,1,1,1,1

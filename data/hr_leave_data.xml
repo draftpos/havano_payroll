@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+
+    <!-- Time Off Type -->
+    <record id="havano_annual_leave_type" model="hr.leave.type">
+        <field name="name">Annual Leave</field>
+        <field name="requires_allocation">yes</field>
+        <field name="employee_requests">yes</field>
+        <field name="leave_validation_type">hr</field>
+    </record>
+
+    <!-- Accrual Plan -->
+    <record id="havano_annual_accrual_plan" model="hr.leave.accrual.plan">
+        <field name="name">Standard 30-Day Annual Accrual</field>
+        <field name="time_off_type_id" ref="havano_annual_leave_type"/>
+        <field name="accrued_gain_time">end</field>
+        <field name="is_based_on_worked_time" eval="False"/>
+    </record>
+
+    <!-- Accrual Level (Milestone) -->
+    <record id="havano_annual_accrual_level" model="hr.leave.accrual.level">
+        <field name="accrual_plan_id" ref="havano_annual_accrual_plan"/>
+        <field name="added_value">2.5</field>
+        <field name="added_value_type">day</field>
+        <field name="frequency">monthly</field>
+        <field name="action_with_unused_accruals">all</field>
+        
+        <!-- Yearly Cap -->
+        <field name="cap_accrued_time" eval="True"/>
+        <field name="maximum_leave">30.0</field>
+        
+        <!-- Balance Cap -->
+        <field name="cap_accrued_time_yearly" eval="True"/>
+        <field name="maximum_leave_yearly">90.0</field>
+    </record>
+
+</odoo>

@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_hr_employee_form_havano" model="ir.ui.view">
+        <field name="name">hr.employee.form.havano</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr.view_employee_form"/>
+        <field name="priority">50</field>
+        <field name="arch" type="xml">
+            <xpath expr="//group[@name='hr_family_group']" position="after">
+                <group name="tax_credits" string="Tax Credits">
+                    <!-- Tax Credit Flags -->
+                    <field name="is_blind"/>
+                    <field name="is_disabled"/>
+                    <field name="is_elderly"/>
+                    <field name="is_over_65" invisible="1"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="payroll_hr_employee_view_form_inherit_havano" model="ir.ui.view">
+        <field name="name">payroll.hr.employee.view.form.inherit.havano</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr_payroll.payroll_hr_employee_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='wage']" position="after">
+                <field name="hao_allow_multi_payroll_currency" invisible="1"/>
+                <field name="hao_secondary_payroll_currency_id" invisible="1"/>
+                <span invisible="not hao_allow_multi_payroll_currency" class="mx-2 fw-bold text-muted">|</span>
+                <field name="hao_secondary_wage" invisible="not hao_allow_multi_payroll_currency" class="o_hr_narrow_field fw-bold text-success" widget="monetary" options="{'currency_field': 'hao_secondary_payroll_currency_id'}"/>
+            </xpath>
+            <xpath expr="//label[@for='wage']" position="before">
+                <field name="hao_contract_structure_type_id" string="Salary Structure Type" options="{'no_create': True}"/>
+                <field name="hao_contract_structure_id" string="Salary Structure" options="{'no_create': True}"/>
+            </xpath>
+            <xpath expr="//field[@name='structure_type_id']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='structure_id']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='structure_type_id']" position="after">
+                <label for="hao_medical_aid_amount"/>
+                <div class="o_row" name="hao_medical_aid_amount">
+                    <field name="hao_medical_aid_amount" class="oe_inline o_hr_narrow_field" widget="monetary" options="{'currency_field': 'hao_medical_aid_currency_id'}"/>
+                    <field name="hao_medical_aid_currency_id" class="oe_inline o_hr_narrow_field" nolabel="1" readonly="not hao_allow_multi_payroll_currency"/>
+                </div>
+                <label for="hao_funeral_policy_amount"/>
+                <div class="o_row" name="hao_funeral_policy_amount">
+                    <field name="hao_funeral_policy_amount" class="oe_inline o_hr_narrow_field" widget="monetary" options="{'currency_field': 'hao_funeral_policy_currency_id'}"/>
+                    <field name="hao_funeral_policy_currency_id" class="oe_inline o_hr_narrow_field" nolabel="1" readonly="not hao_allow_multi_payroll_currency"/>
+                </div>
+            </xpath>
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,348 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_report_zim_statutory" model="ir.actions.report">
+        <field name="name">Zimbabwe Statutory Report</field>
+        <field name="model">havano.zim.report.wizard</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">havano_payroll.report_zim_statutory</field>
+        <field name="report_file">havano_payroll.report_zim_statutory</field>
+        <field name="paperformat_id" ref="havano_payroll.paperformat_havano_payslip"/>
+        <field name="binding_model_id" ref="model_havano_zim_report_wizard"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <template id="report_zim_statutory">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-set="company" t-value="o.payslip_run_id.company_id.sudo()"/>
+                <t t-call="web.basic_layout">
+                    <div class="page" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 15px; line-height: 1.7; letter-spacing: 0.4px; color: #333;">
+                        
+                        <!-- EXACT MATCH TO PAYSLIP HEADER -->
+                        <div id="payslip_header" style="margin-bottom: 20px;">
+                            <div style="margin-bottom: 15px;">
+                                <h2 style="font-weight: bold; text-transform: uppercase; color: #1a1a2e; margin: 0; letter-spacing: 1px; font-size: 24px;"><t t-esc="report_title"/></h2>
+                            </div>
+                            
+                            <table style="width: 100%; border-bottom: 2px solid #1a1a2e; padding-bottom: 10px; margin-bottom: 20px;">
+                                <tr>
+                                    <td style="width: 50%; vertical-align: bottom;">
+                                        <img t-if="company.logo" t-att-src="image_data_uri(company.logo)" style="max-height: 80px;" alt="Logo"/>
+                                        <h3 t-else="" style="color: #1a1a2e; font-weight: bold; margin: 0;"><span t-field="company.name"/></h3>
+                                    </td>
+                                    <td style="width: 50%; text-align: right; vertical-align: bottom; font-size: 14px; color: #555;">
+                                        <div style="font-weight: bold; color: #1a1a2e; font-size: 16px;"><span t-field="company.name"/></div>
+                                        <div t-if="company.street"><span t-field="company.street"/></div>
+                                        <div>
+                                            <t t-if="company.city"><span t-field="company.city"/></t>
+                                            <t t-if="company.country_id">, <span t-field="company.country_id.name"/></t>
+                                        </div>
+                                        <div t-if="company.phone">Phone: <span t-field="company.phone"/></div>
+                                        <div t-if="company.email">Email: <span t-field="company.email"/></div>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+
+                        <!-- PAY RUN DETAILS FORMATTED LIKE EMPLOYEE DETAILS -->
+                        <table style="width: 100%; margin-bottom: 20px;">
+                            <tr>
+                                <td style="width: 50%; vertical-align: top;">
+                                    <div style="font-size: 14px;">
+                                        <strong style="color: #1a1a2e; text-transform: uppercase;">Pay Run Details:</strong><br/>
+                                        <span t-field="o.payslip_run_id.name"/><br/>
+                                        <span t-field="o.payslip_run_id.date_start"/> to <span t-field="o.payslip_run_id.date_end"/><br/>
+                                    </div>
+                                </td>
+                            </tr>
+                        </table>
+                        
+                        <!-- NEC REPORT -->
+                        <t t-if="o.report_type == 'nec'">
+                            <table style="width: 100%; border-collapse: collapse; margin-bottom: 25px;">
+                                <thead>
+                                    <tr style="border-bottom: 2px solid #1a1a2e; font-size: 12px;">
+                                        <th style="text-align: left; padding: 8px 4px; font-weight: bold; text-transform: uppercase;">Surname</th>
+                                        <th style="text-align: left; padding: 8px 4px; font-weight: bold; text-transform: uppercase;">First Names</th>
+                                        <th style="text-align: right; padding: 8px 4px; font-weight: bold; text-transform: uppercase;">Earnings(<span t-field="o.company_id.currency_id.name"/>)</th>
+                                        <th t-if="o.company_id.hao_allow_multi_payroll_currency" style="text-align: right; padding: 8px 4px; font-weight: bold; text-transform: uppercase;">Earnings(<span t-field="o.company_id.hao_secondary_payroll_currency_id.name"/>)</th>
+                                        <th style="text-align: right; padding: 8px 4px; font-weight: bold; text-transform: uppercase;">Employee(<span t-field="o.company_id.currency_id.name"/>)</th>
+                                        <th t-if="o.company_id.hao_allow_multi_payroll_currency" style="text-align: right; padding: 8px 4px; font-weight: bold; text-transform: uppercase;">Employee(<span t-field="o.company_id.hao_secondary_payroll_currency_id.name"/>)</th>
+                                        <th style="text-align: right; padding: 8px 4px; font-weight: bold; text-transform: uppercase;">Employer(<span t-field="o.company_id.currency_id.name"/>)</th>
+                                        <th t-if="o.company_id.hao_allow_multi_payroll_currency" style="text-align: right; padding: 8px 4px; font-weight: bold; text-transform: uppercase;">Employer(<span t-field="o.company_id.hao_secondary_payroll_currency_id.name"/>)</th>
+                                        <th style="text-align: right; padding: 8px 4px; font-weight: bold; text-transform: uppercase;">Total NEC(<span t-field="o.company_id.currency_id.name"/>)</th>
+                                        <th t-if="o.company_id.hao_allow_multi_payroll_currency" style="text-align: right; padding: 8px 4px; font-weight: bold; text-transform: uppercase;">Total NEC(<span t-field="o.company_id.hao_secondary_payroll_currency_id.name"/>)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr t-foreach="report_data" t-as="line">
+                                        <td style="padding: 6px 4px; font-size: 13px;"><span t-field="line.surname"/></td>
+                                        <td style="padding: 6px 4px; font-size: 13px;"><span t-field="line.first_names"/></td>
+                                        <td style="text-align: right; padding: 6px 4px; font-size: 13px;"><span t-field="line.nec_earnings" t-options='{"widget": "monetary", "display_currency": o.company_id.currency_id}'/></td>
+                                        <td t-if="o.company_id.hao_allow_multi_payroll_currency" style="text-align: right; padding: 6px 4px; font-size: 13px;"><span t-field="line.sec_nec_earnings" t-options='{"widget": "monetary", "display_currency": o.company_id.hao_secondary_payroll_currency_id}'/></td>
+                                        <td style="text-align: right; padding: 6px 4px; font-size: 13px;"><span t-field="line.employee_contribution" t-options='{"widget": "monetary", "display_currency": o.company_id.currency_id}'/></td>
+                                        <td t-if="o.company_id.hao_allow_multi_payroll_currency" style="text-align: right; padding: 6px 4px; font-size: 13px;"><span t-field="line.sec_employee_contribution" t-options='{"widget": "monetary", "display_currency": o.company_id.hao_secondary_payroll_currency_id}'/></td>
+                                        <td style="text-align: right; padding: 6px 4px; font-size: 13px;"><span t-field="line.employer_contribution" t-options='{"widget": "monetary", "display_currency": o.company_id.currency_id}'/></td>
+                                        <td t-if="o.company_id.hao_allow_multi_payroll_currency" style="text-align: right; padding: 6px 4px; font-size: 13px;"><span t-field="line.sec_employer_contribution" t-options='{"widget": "monetary", "display_currency": o.company_id.hao_secondary_payroll_currency_id}'/></td>
+                                        <td style="text-align: right; padding: 6px 4px; font-size: 13px; font-weight: bold;"><span t-field="line.total_nec" t-options='{"widget": "monetary", "display_currency": o.company_id.currency_id}'/></td>
+                                        <td t-if="o.company_id.hao_allow_multi_payroll_currency" style="text-align: right; padding: 6px 4px; font-size: 13px; font-weight: bold;"><span t-field="line.sec_total_nec" t-options='{"widget": "monetary", "display_currency": o.company_id.hao_secondary_payroll_currency_id}'/></td>
+                                    </tr>
+                                </tbody>
+                                <tfoot>
+                                    <tr style="border-top: 2px solid #1a1a2e; font-size: 13px; font-weight: bold;">
+                                        <td colspan="2" style="padding: 8px 4px; text-transform: uppercase;">Totals</td>
+                                        <td style="text-align: right; padding: 8px 4px;"><span t-esc="sum(report_data.mapped('nec_earnings'))" t-options='{"widget": "monetary", "display_currency": o.company_id.currency_id}'/></td>
+                                        <td t-if="o.company_id.hao_allow_multi_payroll_currency" style="text-align: right; padding: 8px 4px;"><span t-esc="sum(report_data.mapped('sec_nec_earnings'))" t-options='{"widget": "monetary", "display_currency": o.company_id.hao_secondary_payroll_currency_id}'/></td>
+                                        <td style="text-align: right; padding: 8px 4px;"><span t-esc="sum(report_data.mapped('employee_contribution'))" t-options='{"widget": "monetary", "display_currency": o.company_id.currency_id}'/></td>
+                                        <td t-if="o.company_id.hao_allow_multi_payroll_currency" style="text-align: right; padding: 8px 4px;"><span t-esc="sum(report_data.mapped('sec_employee_contribution'))" t-options='{"widget": "monetary", "display_currency": o.company_id.hao_secondary_payroll_currency_id}'/></td>
+                                        <td style="text-align: right; padding: 8px 4px;"><span t-esc="sum(report_data.mapped('employer_contribution'))" t-options='{"widget": "monetary", "display_currency": o.company_id.currency_id}'/></td>
+                                        <td t-if="o.company_id.hao_allow_multi_payroll_currency" style="text-align: right; padding: 8px 4px;"><span t-esc="sum(report_data.mapped('sec_employer_contribution'))" t-options='{"widget": "monetary", "display_currency": o.company_id.hao_secondary_payroll_currency_id}'/></td>
+                                        <td style="text-align: right; padding: 8px 4px;"><span t-esc="sum(report_data.mapped('total_nec'))" t-options='{"widget": "monetary", "display_currency": o.company_id.currency_id}'/></td>
+                                        <td t-if="o.company_id.hao_allow_multi_payroll_currency" style="text-align: right; padding: 8px 4px;"><span t-esc="sum(report_data.mapped('sec_total_nec'))" t-options='{"widget": "monetary", "display_currency": o.company_id.hao_secondary_payroll_currency_id}'/></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </t>
+
+                        <!-- NSSA P4 REPORT -->
+                        <t t-if="o.report_type == 'nssa_p4'">
+                            <table style="width: 100%; border-collapse: collapse; margin-bottom: 25px;">
+                                <thead>
+                                    <tr style="border-bottom: 2px solid #1a1a2e; font-size: 12px;">
+                                        <th style="text-align: left; padding: 8px 4px; font-weight: bold; text-transform: uppercase;">Surname</th>
+                                        <th style="text-align: left; padding: 8px 4px; font-weight: bold; text-transform: uppercase;">First Names</th>
+                                        <th style="text-align: right; padding: 8px 4px; font-weight: bold; text-transform: uppercase;">Earnings(<span t-field="o.company_id.currency_id.name"/>)</th>
+                                        <th t-if="o.company_id.hao_allow_multi_payroll_currency" style="text-align: right; padding: 8px 4px; font-weight: bold; text-transform: uppercase;">Earnings(<span t-field="o.company_id.hao_secondary_payroll_currency_id.name"/>)</th>
+                                        <th style="text-align: right; padding: 8px 4px; font-weight: bold; text-transform: uppercase;">Current(<span t-field="o.company_id.currency_id.name"/>)</th>
+                                        <th t-if="o.company_id.hao_allow_multi_payroll_currency" style="text-align: right; padding: 8px 4px; font-weight: bold; text-transform: uppercase;">Current(<span t-field="o.company_id.hao_secondary_payroll_currency_id.name"/>)</th>
+                                        <th style="text-align: right; padding: 8px 4px; font-weight: bold; text-transform: uppercase;">Arrears</th>
+                                        <th style="text-align: right; padding: 8px 4px; font-weight: bold; text-transform: uppercase;">Prepay</th>
+                                        <th style="text-align: right; padding: 8px 4px; font-weight: bold; text-transform: uppercase;">Surch</th>
+                                        <th style="text-align: right; padding: 8px 4px; font-weight: bold; text-transform: uppercase;">Total Pay(<span t-field="o.company_id.currency_id.name"/>)</th>
+                                        <th t-if="o.company_id.hao_allow_multi_payroll_currency" style="text-align: right; padding: 8px 4px; font-weight: bold; text-transform: uppercase;">Total Pay(<span t-field="o.company_id.hao_secondary_payroll_currency_id.name"/>)</th>
+                                        <th style="text-align: right; padding: 8px 4px; font-weight: bold; text-transform: uppercase;">Employer(<span t-field="o.company_id.currency_id.name"/>)</th>
+                                        <th t-if="o.company_id.hao_allow_multi_payroll_currency" style="text-align: right; padding: 8px 4px; font-weight: bold; text-transform: uppercase;">Employer(<span t-field="o.company_id.hao_secondary_payroll_currency_id.name"/>)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr t-foreach="report_data" t-as="line">
+                                        <td style="padding: 6px 4px; font-size: 13px;"><span t-field="line.surname"/></td>
+                                        <td style="padding: 6px 4px; font-size: 13px;"><span t-field="line.first_names"/></td>
+                                        <td style="text-align: right; padding: 6px 4px; font-size: 13px;"><span t-field="line.insurable_earnings" t-options='{"widget": "monetary", "display_currency": o.company_id.currency_id}'/></td>
+                                        <td t-if="o.company_id.hao_allow_multi_payroll_currency" style="text-align: right; padding: 6px 4px; font-size: 13px;"><span t-field="line.sec_insurable_earnings" t-options='{"widget": "monetary", "display_currency": o.company_id.hao_secondary_payroll_currency_id}'/></td>
+                                        <td style="text-align: right; padding: 6px 4px; font-size: 13px;"><span t-field="line.current_contributions" t-options='{"widget": "monetary", "display_currency": o.company_id.currency_id}'/></td>
+                                        <td t-if="o.company_id.hao_allow_multi_payroll_currency" style="text-align: right; padding: 6px 4px; font-size: 13px;"><span t-field="line.sec_current_contributions" t-options='{"widget": "monetary", "display_currency": o.company_id.hao_secondary_payroll_currency_id}'/></td>
+                                        <td style="text-align: right; padding: 6px 4px; font-size: 13px;"><span t-field="line.arrears" t-options='{"widget": "monetary", "display_currency": o.company_id.currency_id}'/></td>
+                                        <td style="text-align: right; padding: 6px 4px; font-size: 13px;"><span t-field="line.prepayments" t-options='{"widget": "monetary", "display_currency": o.company_id.currency_id}'/></td>
+                                        <td style="text-align: right; padding: 6px 4px; font-size: 13px;"><span t-field="line.surcharge" t-options='{"widget": "monetary", "display_currency": o.company_id.currency_id}'/></td>
+                                        <td style="text-align: right; padding: 6px 4px; font-size: 13px; font-weight: bold;"><span t-field="line.total_payment" t-options='{"widget": "monetary", "display_currency": o.company_id.currency_id}'/></td>
+                                        <td t-if="o.company_id.hao_allow_multi_payroll_currency" style="text-align: right; padding: 6px 4px; font-size: 13px; font-weight: bold;"><span t-field="line.sec_total_payment" t-options='{"widget": "monetary", "display_currency": o.company_id.hao_secondary_payroll_currency_id}'/></td>
+                                        <td style="text-align: right; padding: 6px 4px; font-size: 13px;"><span t-field="line.employer_payment" t-options='{"widget": "monetary", "display_currency": o.company_id.currency_id}'/></td>
+                                        <td t-if="o.company_id.hao_allow_multi_payroll_currency" style="text-align: right; padding: 6px 4px; font-size: 13px;"><span t-field="line.sec_employer_payment" t-options='{"widget": "monetary", "display_currency": o.company_id.hao_secondary_payroll_currency_id}'/></td>
+                                    </tr>
+                                </tbody>
+                                <tfoot>
+                                    <tr style="border-top: 2px solid #1a1a2e; font-size: 13px; font-weight: bold;">
+                                        <td colspan="2" style="padding: 8px 4px; text-transform: uppercase;">Totals</td>
+                                        <td style="text-align: right; padding: 8px 4px;"><span t-esc="sum(report_data.mapped('insurable_earnings'))" t-options='{"widget": "monetary", "display_currency": o.company_id.currency_id}'/></td>
+                                        <td t-if="o.company_id.hao_allow_multi_payroll_currency" style="text-align: right; padding: 8px 4px;"><span t-esc="sum(report_data.mapped('sec_insurable_earnings'))" t-options='{"widget": "monetary", "display_currency": o.company_id.hao_secondary_payroll_currency_id}'/></td>
+                                        <td style="text-align: right; padding: 8px 4px;"><span t-esc="sum(report_data.mapped('current_contributions'))" t-options='{"widget": "monetary", "display_currency": o.company_id.currency_id}'/></td>
+                                        <td t-if="o.company_id.hao_allow_multi_payroll_currency" style="text-align: right; padding: 8px 4px;"><span t-esc="sum(report_data.mapped('sec_current_contributions'))" t-options='{"widget": "monetary", "display_currency": o.company_id.hao_secondary_payroll_currency_id}'/></td>
+                                        <td style="text-align: right; padding: 8px 4px;"><span t-esc="sum(report_data.mapped('arrears'))" t-options='{"widget": "monetary", "display_currency": o.company_id.currency_id}'/></td>
+                                        <td style="text-align: right; padding: 8px 4px;"><span t-esc="sum(report_data.mapped('prepayments'))" t-options='{"widget": "monetary", "display_currency": o.company_id.currency_id}'/></td>
+                                        <td style="text-align: right; padding: 8px 4px;"><span t-esc="sum(report_data.mapped('surcharge'))" t-options='{"widget": "monetary", "display_currency": o.company_id.currency_id}'/></td>
+                                        <td style="text-align: right; padding: 8px 4px;"><span t-esc="sum(report_data.mapped('total_payment'))" t-options='{"widget": "monetary", "display_currency": o.company_id.currency_id}'/></td>
+                                        <td t-if="o.company_id.hao_allow_multi_payroll_currency" style="text-align: right; padding: 8px 4px;"><span t-esc="sum(report_data.mapped('sec_total_payment'))" t-options='{"widget": "monetary", "display_currency": o.company_id.hao_secondary_payroll_currency_id}'/></td>
+                                        <td style="text-align: right; padding: 8px 4px;"><span t-esc="sum(report_data.mapped('employer_payment'))" t-options='{"widget": "monetary", "display_currency": o.company_id.currency_id}'/></td>
+                                        <td t-if="o.company_id.hao_allow_multi_payroll_currency" style="text-align: right; padding: 8px 4px;"><span t-esc="sum(report_data.mapped('sec_employer_payment'))" t-options='{"widget": "monetary", "display_currency": o.company_id.hao_secondary_payroll_currency_id}'/></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </t>
+
+                        <!-- NSSA EMPLOYER REPORT -->
+                        <t t-if="o.report_type == 'nssa_employer'">
+                            <table style="width: 100%; border-collapse: collapse; margin-bottom: 25px;">
+                                <thead>
+                                    <tr style="border-bottom: 2px solid #1a1a2e; font-size: 12px;">
+                                        <th style="text-align: left; padding: 8px 4px; font-weight: bold; text-transform: uppercase;">Surname</th>
+                                        <th style="text-align: left; padding: 8px 4px; font-weight: bold; text-transform: uppercase;">First Name</th>
+                                        <th style="text-align: left; padding: 8px 4px; font-weight: bold; text-transform: uppercase;">Period</th>
+                                        <th style="text-align: right; padding: 8px 4px; font-weight: bold; text-transform: uppercase;">NSSA(<span t-field="o.company_id.currency_id.name"/>) Emp</th>
+                                        <th t-if="o.company_id.hao_allow_multi_payroll_currency" style="text-align: right; padding: 8px 4px; font-weight: bold; text-transform: uppercase;">NSSA(<span t-field="o.company_id.hao_secondary_payroll_currency_id.name"/>) Emp</th>
+                                        <th style="text-align: right; padding: 8px 4px; font-weight: bold; text-transform: uppercase;">NSSA(<span t-field="o.company_id.currency_id.name"/>) Cpy</th>
+                                        <th t-if="o.company_id.hao_allow_multi_payroll_currency" style="text-align: right; padding: 8px 4px; font-weight: bold; text-transform: uppercase;">NSSA(<span t-field="o.company_id.hao_secondary_payroll_currency_id.name"/>) Cpy</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr t-foreach="report_data" t-as="line">
+                                        <td style="padding: 6px 4px; font-size: 13px;"><span t-field="line.surname"/></td>
+                                        <td style="padding: 6px 4px; font-size: 13px;"><span t-field="line.first_name"/></td>
+                                        <td style="padding: 6px 4px; font-size: 13px;"><span t-field="line.period"/></td>
+                                        <td style="text-align: right; padding: 6px 4px; font-size: 13px;"><span t-field="line.nssa_usd_employee" t-options='{"widget": "monetary", "display_currency": o.company_id.currency_id}'/></td>
+                                        <td t-if="o.company_id.hao_allow_multi_payroll_currency" style="text-align: right; padding: 6px 4px; font-size: 13px;"><span t-field="line.nssa_zig_employee" t-options='{"widget": "monetary", "display_currency": o.company_id.hao_secondary_payroll_currency_id}'/></td>
+                                        <td style="text-align: right; padding: 6px 4px; font-size: 13px;"><span t-field="line.nssa_usd_employer" t-options='{"widget": "monetary", "display_currency": o.company_id.currency_id}'/></td>
+                                        <td t-if="o.company_id.hao_allow_multi_payroll_currency" style="text-align: right; padding: 6px 4px; font-size: 13px;"><span t-field="line.nssa_zig_employer" t-options='{"widget": "monetary", "display_currency": o.company_id.hao_secondary_payroll_currency_id}'/></td>
+                                    </tr>
+                                </tbody>
+                                <tfoot>
+                                    <tr style="border-top: 2px solid #1a1a2e; font-size: 13px; font-weight: bold;">
+                                        <td colspan="3" style="padding: 8px 4px; text-transform: uppercase;">Totals</td>
+                                        <td style="text-align: right; padding: 8px 4px;"><span t-esc="sum(report_data.mapped('nssa_usd_employee'))" t-options='{"widget": "monetary", "display_currency": o.company_id.currency_id}'/></td>
+                                        <td t-if="o.company_id.hao_allow_multi_payroll_currency" style="text-align: right; padding: 8px 4px;"><span t-esc="sum(report_data.mapped('nssa_zig_employee'))" t-options='{"widget": "monetary", "display_currency": o.company_id.hao_secondary_payroll_currency_id}'/></td>
+                                        <td style="text-align: right; padding: 8px 4px;"><span t-esc="sum(report_data.mapped('nssa_usd_employer'))" t-options='{"widget": "monetary", "display_currency": o.company_id.currency_id}'/></td>
+                                        <td t-if="o.company_id.hao_allow_multi_payroll_currency" style="text-align: right; padding: 8px 4px;"><span t-esc="sum(report_data.mapped('nssa_zig_employer'))" t-options='{"widget": "monetary", "display_currency": o.company_id.hao_secondary_payroll_currency_id}'/></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </t>
+
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+    
+    <record id="action_report_payroll_summary" model="ir.actions.report">
+            <field name="name">Payroll Summary Report</field>
+            <field name="model">havano.zim.report.wizard</field>
+            <field name="report_type">qweb-pdf</field>
+            <field name="report_name">havano_payroll.report_payroll_summary</field>
+            <field name="report_file">havano_payroll.report_payroll_summary</field>
+            <field name="paperformat_id" ref="havano_payroll.paperformat_havano_payslip"/>
+            <field name="binding_model_id" ref="model_havano_zim_report_wizard"/>
+            <field name="binding_type">report</field>
+        </record>
+
+        <template id="report_payroll_summary">
+            <t t-call="web.html_container">
+                <t t-foreach="docs" t-as="o">
+                    <t t-set="company" t-value="o.payslip_run_id.company_id.sudo()"/>
+                    <t t-call="web.basic_layout">
+                        <div class="page" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 13px; line-height: 1.5; color: #333;">
+                            <!-- EXACT MATCH TO PAYSLIP HEADER -->
+                            <div id="payslip_header" style="margin-bottom: 20px;">
+                                <div style="margin-bottom: 15px;">
+                                    <h2 style="font-weight: bold; text-transform: uppercase; color: #1a1a2e; margin: 0; letter-spacing: 1px; font-size: 24px;">Payroll Summary Report</h2>
+                                </div>
+                                
+                                <table style="width: 100%; border-bottom: 2px solid #1a1a2e; padding-bottom: 10px; margin-bottom: 20px;">
+                                    <tr>
+                                        <td style="width: 50%; vertical-align: bottom;">
+                                            <img t-if="company.logo" t-att-src="image_data_uri(company.logo)" style="max-height: 80px;" alt="Logo"/>
+                                            <h3 t-else="" style="color: #1a1a2e; font-weight: bold; margin: 0;"><span t-field="company.name"/></h3>
+                                        </td>
+                                        <td style="width: 50%; text-align: right; vertical-align: bottom; font-size: 14px; color: #555;">
+                                            <div style="font-weight: bold; color: #1a1a2e; font-size: 16px;"><span t-field="company.name"/></div>
+                                            <div t-if="company.street"><span t-field="company.street"/></div>
+                                            <div>
+                                                <t t-if="company.city"><span t-field="company.city"/></t>
+                                                <t t-if="company.country_id">, <span t-field="company.country_id.name"/></t>
+                                            </div>
+                                            <div t-if="company.phone">Phone: <span t-field="company.phone"/></div>
+                                            <div t-if="company.email">Email: <span t-field="company.email"/></div>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+
+                            <!-- PAY RUN DETAILS FORMATTED LIKE EMPLOYEE DETAILS -->
+                            <table style="width: 100%; margin-bottom: 20px;">
+                                <tr>
+                                    <td style="width: 50%; vertical-align: top;">
+                                        <div style="font-size: 14px;">
+                                            <strong style="color: #1a1a2e; text-transform: uppercase;">Pay Run Details:</strong><br/>
+                                            <span t-field="o.payslip_run_id.name"/><br/>
+                                            <span t-field="o.payslip_run_id.date_start"/> to <span t-field="o.payslip_run_id.date_end"/><br/>
+                                        </div>
+                                    </td>
+                                    <td style="width: 50%; vertical-align: top; text-align: right;">
+                                        <div style="font-size: 14px;">
+                                            <strong style="color: #1a1a2e; text-transform: uppercase;">Report Details:</strong><br/>
+                                            Total Employees: <span t-esc="len(o.payslip_run_id.slip_ids)"/><br/>
+                                            Currency: <span t-field="company.currency_id.name"/><t t-if="company.hao_allow_multi_payroll_currency"> &amp; <span t-field="company.hao_secondary_payroll_currency_id.name"/></t><br/>
+                                            Report Date: <span t-esc="context_timestamp(datetime.datetime.now()).strftime('%Y-%m-%d')"/><br/>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </table>
+                            
+                            <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                                <thead>
+                                    <tr style="border-bottom: 2px solid #1a1a2e; font-size: 12px;">
+                                        <th t-att-style="'width: ' + ('35%' if not company.hao_allow_multi_payroll_currency else '30%') + '; padding: 8px 4px; font-weight: bold; text-transform: uppercase; text-align: left;'">Earnings</th>
+                                        <th t-att-style="'width: ' + ('15%' if not company.hao_allow_multi_payroll_currency else '10%') + '; padding: 8px 4px; font-weight: bold; text-transform: uppercase; text-align: right;'">Amount (<span t-field="company.currency_id.name"/>)</th>
+                                        <th t-if="company.hao_allow_multi_payroll_currency" style="width: 10%; padding: 8px 4px; font-weight: bold; text-transform: uppercase; text-align: right;">Amount (<span t-field="company.hao_secondary_payroll_currency_id.name"/>)</th>
+                                        
+                                        <th t-att-style="'width: ' + ('35%' if not company.hao_allow_multi_payroll_currency else '30%') + '; padding: 8px 20px 8px 20px; font-weight: bold; text-transform: uppercase; text-align: left;'">Deductions</th>
+                                        <th t-att-style="'width: ' + ('15%' if not company.hao_allow_multi_payroll_currency else '10%') + '; padding: 8px 4px; font-weight: bold; text-transform: uppercase; text-align: right;'">Amount (<span t-field="company.currency_id.name"/>)</th>
+                                        <th t-if="company.hao_allow_multi_payroll_currency" style="width: 10%; padding: 8px 4px; font-weight: bold; text-transform: uppercase; text-align: right;">Amount (<span t-field="company.hao_secondary_payroll_currency_id.name"/>)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-set="max_rows" t-value="max(len(earnings), len(deductions))"/>
+                                    <t t-foreach="range(max_rows)" t-as="i">
+                                        <t t-set="earn" t-value="earnings[i] if i &lt; len(earnings) else None"/>
+                                        <t t-set="ded" t-value="deductions[i] if i &lt; len(deductions) else None"/>
+                                        <tr>
+                                            <!-- Earning side -->
+                                            <td style="padding: 6px 4px; font-size: 13px;">
+                                                <span t-if="earn" t-esc="earn['name']"/>
+                                            </td>
+                                            <td style="padding: 6px 4px; font-size: 13px; text-align: right;">
+                                                <span t-if="earn" t-esc="earn['amount']" t-options='{"widget": "monetary", "display_currency": company.currency_id}'/>
+                                            </td>
+                                            <td t-if="company.hao_allow_multi_payroll_currency" style="padding: 6px 4px; font-size: 13px; text-align: right;">
+                                                <span t-if="earn" t-esc="earn['sec_amount']" t-options='{"widget": "monetary", "display_currency": company.hao_secondary_payroll_currency_id}'/>
+                                            </td>
+                                            
+                                            <!-- Deduction side -->
+                                            <td style="padding: 6px 20px 6px 20px; font-size: 13px; text-align: left;">
+                                                <span t-if="ded" t-esc="ded['name']"/>
+                                            </td>
+                                            <td style="padding: 6px 4px; font-size: 13px; text-align: right;">
+                                                <span t-if="ded" t-esc="ded['amount']" t-options='{"widget": "monetary", "display_currency": company.currency_id}'/>
+                                            </td>
+                                            <td t-if="company.hao_allow_multi_payroll_currency" style="padding: 6px 4px; font-size: 13px; text-align: right;">
+                                                <span t-if="ded" t-esc="ded['sec_amount']" t-options='{"widget": "monetary", "display_currency": company.hao_secondary_payroll_currency_id}'/>
+                                            </td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                                <tfoot>
+                                    <tr style="border-top: 2px solid #1a1a2e; font-size: 13px; font-weight: bold;">
+                                        <td style="padding: 8px 4px; text-transform: uppercase; text-align: left;">Total Earnings</td>
+                                        <td style="padding: 8px 4px; text-align: right;">
+                                            <span t-esc="total_earnings" t-options='{"widget": "monetary", "display_currency": company.currency_id}'/>
+                                        </td>
+                                        <td t-if="company.hao_allow_multi_payroll_currency" style="padding: 8px 4px; text-align: right;">
+                                            <span t-esc="sec_total_earnings" t-options='{"widget": "monetary", "display_currency": company.hao_secondary_payroll_currency_id}'/>
+                                        </td>
+                                        <td style="padding: 8px 20px 8px 20px; text-transform: uppercase; text-align: left;">Total Deductions</td>
+                                        <td style="padding: 8px 4px; text-align: right;">
+                                            <span t-esc="total_deductions" t-options='{"widget": "monetary", "display_currency": company.currency_id}'/>
+                                        </td>
+                                        <td t-if="company.hao_allow_multi_payroll_currency" style="padding: 8px 4px; text-align: right;">
+                                            <span t-esc="sec_total_deductions" t-options='{"widget": "monetary", "display_currency": company.hao_secondary_payroll_currency_id}'/>
+                                        </td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                            
+                            <!-- Footer Notes -->
+                            <div style="font-weight: bold; font-size: 13px; line-height: 1.8; margin-top: 10px;">
+                                <t t-if="medical_deductions or sec_medical_deductions">
+                                    <div>Medical Deductions: <span style="font-weight: normal;" t-esc="medical_deductions" t-options='{"widget": "monetary", "display_currency": company.currency_id}'/> <t t-if="company.hao_allow_multi_payroll_currency"><span style="font-weight: normal; margin-left: 10px;" t-esc="sec_medical_deductions" t-options='{"widget": "monetary", "display_currency": company.hao_secondary_payroll_currency_id}'/></t></div>
+                                </t>
+                                <t t-if="tax_credit or sec_tax_credit">
+                                    <div>Tax Credit (50% of Medical): <span style="font-weight: normal;" t-esc="tax_credit" t-options='{"widget": "monetary", "display_currency": company.currency_id}'/> <t t-if="company.hao_allow_multi_payroll_currency"><span style="font-weight: normal; margin-left: 10px;" t-esc="sec_tax_credit" t-options='{"widget": "monetary", "display_currency": company.hao_secondary_payroll_currency_id}'/></t></div>
+                                </t>
+                            </div>
+
+                        </div>
+                    </t>
+                </t>
+            </t>
+        </template>
+
+    </odoo>

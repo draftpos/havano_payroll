@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        
+        <!-- Zimbabwe Gold -->
+        <record id="currency_zwg" model="res.currency" forcecreate="False">
+            <field name="name">ZWG</field>
+            <field name="symbol">ZWG</field>
+            <field name="full_name">Zimbabwe Gold</field>
+            <field name="rounding">0.01</field>
+            <field name="decimal_places">2</field>
+            <field name="position">before</field>
+            <field name="active">True</field>
+        </record>
+
+    </data>
+</odoo>

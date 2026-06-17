@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="hr_contract_view_form_inherit_havano" model="ir.ui.view">
+        <field name="name">hr.version.form.inherit.havano</field>
+        <field name="model">hr.version</field>
+        <field name="inherit_id" ref="hr.hr_contract_template_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//group[@name='salary_info']" position="inside">
+                <group string="Recurring Deductions" name="recurring_deductions">
+                    <field name="hao_allow_multi_payroll_currency" invisible="1"/>
+                    <label for="hao_medical_aid_amount"/>
+                    <div class="o_row" name="hao_medical_aid_amount">
+                        <field name="hao_medical_aid_amount" class="oe_inline o_hr_narrow_field" widget="monetary" options="{'currency_field': 'hao_medical_aid_currency_id'}"/>
+                        <field name="hao_medical_aid_currency_id" class="oe_inline o_hr_narrow_field" nolabel="1" readonly="not hao_allow_multi_payroll_currency"/>
+                    </div>
+                    <label for="hao_funeral_policy_amount"/>
+                    <div class="o_row" name="hao_funeral_policy_amount">
+                        <field name="hao_funeral_policy_amount" class="oe_inline o_hr_narrow_field" widget="monetary" options="{'currency_field': 'hao_funeral_policy_currency_id'}"/>
+                        <field name="hao_funeral_policy_currency_id" class="oe_inline o_hr_narrow_field" nolabel="1" readonly="not hao_allow_multi_payroll_currency"/>
+                    </div>
+                </group>
+            </xpath>
+        </field>
+    </record>
+</odoo>

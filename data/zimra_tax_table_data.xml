@@ -1,0 +1,574 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        
+        <!-- ============================================================ -->
+        <!-- ==================== USD TAX TABLES ======================== -->
+        <!-- ============================================================ -->
+        
+        <!-- USD MONTHLY -->
+        <record id="usd_monthly_1" model="zimra.tax.table">
+            <field name="currency_id" ref="base.USD"/>
+            <field name="frequency">monthly</field>
+            <field name="min_income">0</field>
+            <field name="max_income">100.00</field>
+            <field name="rate">0</field>
+            <field name="deduction">0</field>
+            <field name="effective_date">2025-01-01</field>
+        </record>
+        <record id="usd_monthly_2" model="zimra.tax.table">
+            <field name="currency_id" ref="base.USD"/>
+            <field name="frequency">monthly</field>
+            <field name="min_income">100.01</field>
+            <field name="max_income">300.00</field>
+            <field name="rate">20</field>
+            <field name="deduction">20.00</field>
+            <field name="effective_date">2025-01-01</field>
+        </record>
+        <record id="usd_monthly_3" model="zimra.tax.table">
+            <field name="currency_id" ref="base.USD"/>
+            <field name="frequency">monthly</field>
+            <field name="min_income">300.01</field>
+            <field name="max_income">1000.00</field>
+            <field name="rate">25</field>
+            <field name="deduction">35.00</field>
+            <field name="effective_date">2025-01-01</field>
+        </record>
+        <record id="usd_monthly_4" model="zimra.tax.table">
+            <field name="currency_id" ref="base.USD"/>
+            <field name="frequency">monthly</field>
+            <field name="min_income">1000.01</field>
+            <field name="max_income">2000.00</field>
+            <field name="rate">30</field>
+            <field name="deduction">85.00</field>
+            <field name="effective_date">2025-01-01</field>
+        </record>
+        <record id="usd_monthly_5" model="zimra.tax.table">
+            <field name="currency_id" ref="base.USD"/>
+            <field name="frequency">monthly</field>
+            <field name="min_income">2000.01</field>
+            <field name="max_income">3000.00</field>
+            <field name="rate">35</field>
+            <field name="deduction">185.00</field>
+            <field name="effective_date">2025-01-01</field>
+        </record>
+        <record id="usd_monthly_6" model="zimra.tax.table">
+            <field name="currency_id" ref="base.USD"/>
+            <field name="frequency">monthly</field>
+            <field name="min_income">3000.01</field>
+            <field name="max_income">0</field>
+            <field name="rate">40</field>
+            <field name="deduction">335.00</field>
+            <field name="effective_date">2025-01-01</field>
+        </record>
+
+        <!-- USD WEEKLY -->
+        <record id="usd_weekly_1" model="zimra.tax.table">
+            <field name="currency_id" ref="base.USD"/>
+            <field name="frequency">weekly</field>
+            <field name="min_income">0</field>
+            <field name="max_income">23.08</field>
+            <field name="rate">0</field>
+            <field name="deduction">0</field>
+            <field name="effective_date">2025-01-01</field>
+        </record>
+        <record id="usd_weekly_2" model="zimra.tax.table">
+            <field name="currency_id" ref="base.USD"/>
+            <field name="frequency">weekly</field>
+            <field name="min_income">23.09</field>
+            <field name="max_income">69.23</field>
+            <field name="rate">20</field>
+            <field name="deduction">4.62</field>
+            <field name="effective_date">2025-01-01</field>
+        </record>
+        <record id="usd_weekly_3" model="zimra.tax.table">
+            <field name="currency_id" ref="base.USD"/>
+            <field name="frequency">weekly</field>
+            <field name="min_income">69.24</field>
+            <field name="max_income">230.77</field>
+            <field name="rate">25</field>
+            <field name="deduction">8.08</field>
+            <field name="effective_date">2025-01-01</field>
+        </record>
+        <record id="usd_weekly_4" model="zimra.tax.table">
+            <field name="currency_id" ref="base.USD"/>
+            <field name="frequency">weekly</field>
+            <field name="min_income">230.78</field>
+            <field name="max_income">461.54</field>
+            <field name="rate">30</field>
+            <field name="deduction">19.62</field>
+            <field name="effective_date">2025-01-01</field>
+        </record>
+        <record id="usd_weekly_5" model="zimra.tax.table">
+            <field name="currency_id" ref="base.USD"/>
+            <field name="frequency">weekly</field>
+            <field name="min_income">461.55</field>
+            <field name="max_income">692.31</field>
+            <field name="rate">35</field>
+            <field name="deduction">42.69</field>
+            <field name="effective_date">2025-01-01</field>
+        </record>
+        <record id="usd_weekly_6" model="zimra.tax.table">
+            <field name="currency_id" ref="base.USD"/>
+            <field name="frequency">weekly</field>
+            <field name="min_income">692.32</field>
+            <field name="max_income">0</field>
+            <field name="rate">40</field>
+            <field name="deduction">77.31</field>
+            <field name="effective_date">2025-01-01</field>
+        </record>
+
+        <!-- USD FORTNIGHTLY -->
+        <record id="usd_fortnightly_1" model="zimra.tax.table">
+            <field name="currency_id" ref="base.USD"/>
+            <field name="frequency">fortnightly</field>
+            <field name="min_income">0</field>
+            <field name="max_income">46.15</field>
+            <field name="rate">0</field>
+            <field name="deduction">0</field>
+            <field name="effective_date">2025-01-01</field>
+        </record>
+        <record id="usd_fortnightly_2" model="zimra.tax.table">
+            <field name="currency_id" ref="base.USD"/>
+            <field name="frequency">fortnightly</field>
+            <field name="min_income">46.16</field>
+            <field name="max_income">138.46</field>
+            <field name="rate">20</field>
+            <field name="deduction">9.23</field>
+            <field name="effective_date">2025-01-01</field>
+        </record>
+        <record id="usd_fortnightly_3" model="zimra.tax.table">
+            <field name="currency_id" ref="base.USD"/>
+            <field name="frequency">fortnightly</field>
+            <field name="min_income">138.47</field>
+            <field name="max_income">461.54</field>
+            <field name="rate">25</field>
+            <field name="deduction">16.15</field>
+            <field name="effective_date">2025-01-01</field>
+        </record>
+        <record id="usd_fortnightly_4" model="zimra.tax.table">
+            <field name="currency_id" ref="base.USD"/>
+            <field name="frequency">fortnightly</field>
+            <field name="min_income">461.55</field>
+            <field name="max_income">923.08</field>
+            <field name="rate">30</field>
+            <field name="deduction">39.23</field>
+            <field name="effective_date">2025-01-01</field>
+        </record>
+        <record id="usd_fortnightly_5" model="zimra.tax.table">
+            <field name="currency_id" ref="base.USD"/>
+            <field name="frequency">fortnightly</field>
+            <field name="min_income">923.09</field>
+            <field name="max_income">1384.62</field>
+            <field name="rate">35</field>
+            <field name="deduction">85.38</field>
+            <field name="effective_date">2025-01-01</field>
+        </record>
+        <record id="usd_fortnightly_6" model="zimra.tax.table">
+            <field name="currency_id" ref="base.USD"/>
+            <field name="frequency">fortnightly</field>
+            <field name="min_income">1384.63</field>
+            <field name="max_income">0</field>
+            <field name="rate">40</field>
+            <field name="deduction">154.62</field>
+            <field name="effective_date">2025-01-01</field>
+        </record>
+
+        <!-- USD DAILY -->
+        <record id="usd_daily_1" model="zimra.tax.table">
+            <field name="currency_id" ref="base.USD"/>
+            <field name="frequency">daily</field>
+            <field name="min_income">0</field>
+            <field name="max_income">3.29</field>
+            <field name="rate">0</field>
+            <field name="deduction">0</field>
+            <field name="effective_date">2025-01-01</field>
+        </record>
+        <record id="usd_daily_2" model="zimra.tax.table">
+            <field name="currency_id" ref="base.USD"/>
+            <field name="frequency">daily</field>
+            <field name="min_income">3.30</field>
+            <field name="max_income">9.86</field>
+            <field name="rate">20</field>
+            <field name="deduction">0.66</field>
+            <field name="effective_date">2025-01-01</field>
+        </record>
+        <record id="usd_daily_3" model="zimra.tax.table">
+            <field name="currency_id" ref="base.USD"/>
+            <field name="frequency">daily</field>
+            <field name="min_income">9.87</field>
+            <field name="max_income">32.88</field>
+            <field name="rate">25</field>
+            <field name="deduction">1.15</field>
+            <field name="effective_date">2025-01-01</field>
+        </record>
+        <record id="usd_daily_4" model="zimra.tax.table">
+            <field name="currency_id" ref="base.USD"/>
+            <field name="frequency">daily</field>
+            <field name="min_income">32.89</field>
+            <field name="max_income">65.75</field>
+            <field name="rate">30</field>
+            <field name="deduction">2.79</field>
+            <field name="effective_date">2025-01-01</field>
+        </record>
+        <record id="usd_daily_5" model="zimra.tax.table">
+            <field name="currency_id" ref="base.USD"/>
+            <field name="frequency">daily</field>
+            <field name="min_income">65.76</field>
+            <field name="max_income">98.63</field>
+            <field name="rate">35</field>
+            <field name="deduction">6.08</field>
+            <field name="effective_date">2025-01-01</field>
+        </record>
+        <record id="usd_daily_6" model="zimra.tax.table">
+            <field name="currency_id" ref="base.USD"/>
+            <field name="frequency">daily</field>
+            <field name="min_income">98.64</field>
+            <field name="max_income">0</field>
+            <field name="rate">40</field>
+            <field name="deduction">11.01</field>
+            <field name="effective_date">2025-01-01</field>
+        </record>
+
+        <!-- ============================================================ -->
+        <!-- ==================== ZWG TAX TABLES ======================== -->
+        <!-- ============================================================ -->
+        
+        <!-- ZWG MONTHLY -->
+        <record id="zwg_monthly_1" model="zimra.tax.table">
+            <field name="currency_id" ref="currency_zwg"/>
+            <field name="frequency">monthly</field>
+            <field name="min_income">0</field>
+            <field name="max_income">2800.00</field>
+            <field name="rate">0</field>
+            <field name="deduction">0</field>
+            <field name="effective_date">2025-01-01</field>
+        </record>
+        <record id="zwg_monthly_2" model="zimra.tax.table">
+            <field name="currency_id" ref="currency_zwg"/>
+            <field name="frequency">monthly</field>
+            <field name="min_income">2800.01</field>
+            <field name="max_income">8400.00</field>
+            <field name="rate">20</field>
+            <field name="deduction">560.00</field>
+            <field name="effective_date">2025-01-01</field>
+        </record>
+        <record id="zwg_monthly_3" model="zimra.tax.table">
+            <field name="currency_id" ref="currency_zwg"/>
+            <field name="frequency">monthly</field>
+            <field name="min_income">8400.01</field>
+            <field name="max_income">28000.00</field>
+            <field name="rate">25</field>
+            <field name="deduction">980.00</field>
+            <field name="effective_date">2025-01-01</field>
+        </record>
+        <record id="zwg_monthly_4" model="zimra.tax.table">
+            <field name="currency_id" ref="currency_zwg"/>
+            <field name="frequency">monthly</field>
+            <field name="min_income">28000.01</field>
+            <field name="max_income">56000.00</field>
+            <field name="rate">30</field>
+            <field name="deduction">2380.00</field>
+            <field name="effective_date">2025-01-01</field>
+        </record>
+        <record id="zwg_monthly_5" model="zimra.tax.table">
+            <field name="currency_id" ref="currency_zwg"/>
+            <field name="frequency">monthly</field>
+            <field name="min_income">56000.01</field>
+            <field name="max_income">84000.00</field>
+            <field name="rate">35</field>
+            <field name="deduction">5180.00</field>
+            <field name="effective_date">2025-01-01</field>
+        </record>
+        <record id="zwg_monthly_6" model="zimra.tax.table">
+            <field name="currency_id" ref="currency_zwg"/>
+            <field name="frequency">monthly</field>
+            <field name="min_income">84000.01</field>
+            <field name="max_income">0</field>
+            <field name="rate">40</field>
+            <field name="deduction">9380.00</field>
+            <field name="effective_date">2025-01-01</field>
+        </record>
+
+        <!-- ZWG WEEKLY -->
+        <record id="zwg_weekly_1" model="zimra.tax.table">
+            <field name="currency_id" ref="currency_zwg"/>
+            <field name="frequency">weekly</field>
+            <field name="min_income">0</field>
+            <field name="max_income">646.15</field>
+            <field name="rate">0</field>
+            <field name="deduction">0</field>
+            <field name="effective_date">2025-01-01</field>
+        </record>
+        <record id="zwg_weekly_2" model="zimra.tax.table">
+            <field name="currency_id" ref="currency_zwg"/>
+            <field name="frequency">weekly</field>
+            <field name="min_income">646.16</field>
+            <field name="max_income">1938.46</field>
+            <field name="rate">20</field>
+            <field name="deduction">129.23</field>
+            <field name="effective_date">2025-01-01</field>
+        </record>
+        <record id="zwg_weekly_3" model="zimra.tax.table">
+            <field name="currency_id" ref="currency_zwg"/>
+            <field name="frequency">weekly</field>
+            <field name="min_income">1938.47</field>
+            <field name="max_income">6461.54</field>
+            <field name="rate">25</field>
+            <field name="deduction">226.15</field>
+            <field name="effective_date">2025-01-01</field>
+        </record>
+        <record id="zwg_weekly_4" model="zimra.tax.table">
+            <field name="currency_id" ref="currency_zwg"/>
+            <field name="frequency">weekly</field>
+            <field name="min_income">6461.55</field>
+            <field name="max_income">12923.08</field>
+            <field name="rate">30</field>
+            <field name="deduction">549.23</field>
+            <field name="effective_date">2025-01-01</field>
+        </record>
+        <record id="zwg_weekly_5" model="zimra.tax.table">
+            <field name="currency_id" ref="currency_zwg"/>
+            <field name="frequency">weekly</field>
+            <field name="min_income">12923.09</field>
+            <field name="max_income">19384.62</field>
+            <field name="rate">35</field>
+            <field name="deduction">1195.38</field>
+            <field name="effective_date">2025-01-01</field>
+        </record>
+        <record id="zwg_weekly_6" model="zimra.tax.table">
+            <field name="currency_id" ref="currency_zwg"/>
+            <field name="frequency">weekly</field>
+            <field name="min_income">19384.63</field>
+            <field name="max_income">0</field>
+            <field name="rate">40</field>
+            <field name="deduction">2164.62</field>
+            <field name="effective_date">2025-01-01</field>
+        </record>
+
+        <!-- ZWG FORTNIGHTLY -->
+        <record id="zwg_fortnightly_1" model="zimra.tax.table">
+            <field name="currency_id" ref="currency_zwg"/>
+            <field name="frequency">fortnightly</field>
+            <field name="min_income">0</field>
+            <field name="max_income">1292.31</field>
+            <field name="rate">0</field>
+            <field name="deduction">0</field>
+            <field name="effective_date">2025-01-01</field>
+        </record>
+        <record id="zwg_fortnightly_2" model="zimra.tax.table">
+            <field name="currency_id" ref="currency_zwg"/>
+            <field name="frequency">fortnightly</field>
+            <field name="min_income">1292.32</field>
+            <field name="max_income">3876.92</field>
+            <field name="rate">20</field>
+            <field name="deduction">258.46</field>
+            <field name="effective_date">2025-01-01</field>
+        </record>
+        <record id="zwg_fortnightly_3" model="zimra.tax.table">
+            <field name="currency_id" ref="currency_zwg"/>
+            <field name="frequency">fortnightly</field>
+            <field name="min_income">3876.93</field>
+            <field name="max_income">12923.08</field>
+            <field name="rate">25</field>
+            <field name="deduction">452.31</field>
+            <field name="effective_date">2025-01-01</field>
+        </record>
+        <record id="zwg_fortnightly_4" model="zimra.tax.table">
+            <field name="currency_id" ref="currency_zwg"/>
+            <field name="frequency">fortnightly</field>
+            <field name="min_income">12923.09</field>
+            <field name="max_income">25846.15</field>
+            <field name="rate">30</field>
+            <field name="deduction">1098.46</field>
+            <field name="effective_date">2025-01-01</field>
+        </record>
+        <record id="zwg_fortnightly_5" model="zimra.tax.table">
+            <field name="currency_id" ref="currency_zwg"/>
+            <field name="frequency">fortnightly</field>
+            <field name="min_income">25846.16</field>
+            <field name="max_income">38769.23</field>
+            <field name="rate">35</field>
+            <field name="deduction">2390.77</field>
+            <field name="effective_date">2025-01-01</field>
+        </record>
+        <record id="zwg_fortnightly_6" model="zimra.tax.table">
+            <field name="currency_id" ref="currency_zwg"/>
+            <field name="frequency">fortnightly</field>
+            <field name="min_income">38769.24</field>
+            <field name="max_income">0</field>
+            <field name="rate">40</field>
+            <field name="deduction">4329.23</field>
+            <field name="effective_date">2025-01-01</field>
+        </record>
+
+        <!-- ZWG DAILY -->
+        <record id="zwg_daily_1" model="zimra.tax.table">
+            <field name="currency_id" ref="currency_zwg"/>
+            <field name="frequency">daily</field>
+            <field name="min_income">0</field>
+            <field name="max_income">92.05</field>
+            <field name="rate">0</field>
+            <field name="deduction">0</field>
+            <field name="effective_date">2025-01-01</field>
+        </record>
+        <record id="zwg_daily_2" model="zimra.tax.table">
+            <field name="currency_id" ref="currency_zwg"/>
+            <field name="frequency">daily</field>
+            <field name="min_income">92.06</field>
+            <field name="max_income">276.16</field>
+            <field name="rate">20</field>
+            <field name="deduction">18.41</field>
+            <field name="effective_date">2025-01-01</field>
+        </record>
+        <record id="zwg_daily_3" model="zimra.tax.table">
+            <field name="currency_id" ref="currency_zwg"/>
+            <field name="frequency">daily</field>
+            <field name="min_income">276.17</field>
+            <field name="max_income">920.55</field>
+            <field name="rate">25</field>
+            <field name="deduction">32.22</field>
+            <field name="effective_date">2025-01-01</field>
+        </record>
+        <record id="zwg_daily_4" model="zimra.tax.table">
+            <field name="currency_id" ref="currency_zwg"/>
+            <field name="frequency">daily</field>
+            <field name="min_income">920.56</field>
+            <field name="max_income">1841.10</field>
+            <field name="rate">30</field>
+            <field name="deduction">78.25</field>
+            <field name="effective_date">2025-01-01</field>
+        </record>
+        <record id="zwg_daily_5" model="zimra.tax.table">
+            <field name="currency_id" ref="currency_zwg"/>
+            <field name="frequency">daily</field>
+            <field name="min_income">1841.11</field>
+            <field name="max_income">2761.64</field>
+            <field name="rate">35</field>
+            <field name="deduction">170.30</field>
+            <field name="effective_date">2025-01-01</field>
+        </record>
+        <record id="zwg_daily_6" model="zimra.tax.table">
+            <field name="currency_id" ref="currency_zwg"/>
+            <field name="frequency">daily</field>
+            <field name="min_income">2761.65</field>
+            <field name="max_income">0</field>
+            <field name="rate">40</field>
+            <field name="deduction">308.38</field>
+            <field name="effective_date">2025-01-01</field>
+        </record>
+
+        <!-- USD YEARLY -->
+        <record id="usd_yearly_1" model="zimra.tax.table">
+            <field name="currency_id" ref="base.USD"/>
+            <field name="frequency">yearly</field>
+            <field name="min_income">0</field>
+            <field name="max_income">1200.00</field>
+            <field name="rate">0</field>
+            <field name="deduction">0</field>
+            <field name="effective_date">2025-01-01</field>
+        </record>
+        <record id="usd_yearly_2" model="zimra.tax.table">
+            <field name="currency_id" ref="base.USD"/>
+            <field name="frequency">yearly</field>
+            <field name="min_income">1200.01</field>
+            <field name="max_income">3600.00</field>
+            <field name="rate">20</field>
+            <field name="deduction">240.00</field>
+            <field name="effective_date">2025-01-01</field>
+        </record>
+        <record id="usd_yearly_3" model="zimra.tax.table">
+            <field name="currency_id" ref="base.USD"/>
+            <field name="frequency">yearly</field>
+            <field name="min_income">3600.01</field>
+            <field name="max_income">12000.00</field>
+            <field name="rate">25</field>
+            <field name="deduction">420.00</field>
+            <field name="effective_date">2025-01-01</field>
+        </record>
+        <record id="usd_yearly_4" model="zimra.tax.table">
+            <field name="currency_id" ref="base.USD"/>
+            <field name="frequency">yearly</field>
+            <field name="min_income">12000.01</field>
+            <field name="max_income">24000.00</field>
+            <field name="rate">30</field>
+            <field name="deduction">1020.00</field>
+            <field name="effective_date">2025-01-01</field>
+        </record>
+        <record id="usd_yearly_5" model="zimra.tax.table">
+            <field name="currency_id" ref="base.USD"/>
+            <field name="frequency">yearly</field>
+            <field name="min_income">24000.01</field>
+            <field name="max_income">36000.00</field>
+            <field name="rate">35</field>
+            <field name="deduction">2220.00</field>
+            <field name="effective_date">2025-01-01</field>
+        </record>
+        <record id="usd_yearly_6" model="zimra.tax.table">
+            <field name="currency_id" ref="base.USD"/>
+            <field name="frequency">yearly</field>
+            <field name="min_income">36000.01</field>
+            <field name="max_income">0</field>
+            <field name="rate">40</field>
+            <field name="deduction">4020.00</field>
+            <field name="effective_date">2025-01-01</field>
+        </record>
+
+        <!-- ZWG YEARLY -->
+        <record id="zwg_yearly_1" model="zimra.tax.table">
+            <field name="currency_id" ref="currency_zwg"/>
+            <field name="frequency">yearly</field>
+            <field name="min_income">0</field>
+            <field name="max_income">33600.00</field>
+            <field name="rate">0</field>
+            <field name="deduction">0</field>
+            <field name="effective_date">2025-01-01</field>
+        </record>
+        <record id="zwg_yearly_2" model="zimra.tax.table">
+            <field name="currency_id" ref="currency_zwg"/>
+            <field name="frequency">yearly</field>
+            <field name="min_income">33600.01</field>
+            <field name="max_income">100800.00</field>
+            <field name="rate">20</field>
+            <field name="deduction">6720.00</field>
+            <field name="effective_date">2025-01-01</field>
+        </record>
+        <record id="zwg_yearly_3" model="zimra.tax.table">
+            <field name="currency_id" ref="currency_zwg"/>
+            <field name="frequency">yearly</field>
+            <field name="min_income">100800.01</field>
+            <field name="max_income">336000.00</field>
+            <field name="rate">25</field>
+            <field name="deduction">11760.00</field>
+            <field name="effective_date">2025-01-01</field>
+        </record>
+        <record id="zwg_yearly_4" model="zimra.tax.table">
+            <field name="currency_id" ref="currency_zwg"/>
+            <field name="frequency">yearly</field>
+            <field name="min_income">336000.01</field>
+            <field name="max_income">672000.00</field>
+            <field name="rate">30</field>
+            <field name="deduction">28560.00</field>
+            <field name="effective_date">2025-01-01</field>
+        </record>
+        <record id="zwg_yearly_5" model="zimra.tax.table">
+            <field name="currency_id" ref="currency_zwg"/>
+            <field name="frequency">yearly</field>
+            <field name="min_income">672000.01</field>
+            <field name="max_income">1008000.00</field>
+            <field name="rate">35</field>
+            <field name="deduction">62160.00</field>
+            <field name="effective_date">2025-01-01</field>
+        </record>
+        <record id="zwg_yearly_6" model="zimra.tax.table">
+            <field name="currency_id" ref="currency_zwg"/>
+            <field name="frequency">yearly</field>
+            <field name="min_income">1008000.01</field>
+            <field name="max_income">0</field>
+            <field name="rate">40</field>
+            <field name="deduction">112560.00</field>
+            <field name="effective_date">2025-01-01</field>
+        </record>
+
+    </data>
+</odoo>

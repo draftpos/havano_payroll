@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Paper Format -->
+    <record id="paperformat_salary_registry" model="report.paperformat">
+        <field name="name">Salary Registry Landscape</field>
+        <field name="default" eval="True"/>
+        <field name="format">A4</field>
+        <field name="page_height">0</field>
+        <field name="page_width">0</field>
+        <field name="orientation">Landscape</field>
+        <field name="margin_top">20</field>
+        <field name="margin_bottom">20</field>
+        <field name="margin_left">7</field>
+        <field name="margin_right">7</field>
+        <field name="header_line" eval="False"/>
+        <field name="header_spacing">15</field>
+        <field name="dpi">90</field>
+    </record>
+
+    <!-- Report Action -->
+    <record id="action_report_salary_registry" model="ir.actions.report">
+        <field name="name">Salary Registry Report</field>
+        <field name="model">havano.zim.report.wizard</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">havano_payroll.report_salary_registry</field>
+        <field name="report_file">havano_payroll.report_salary_registry</field>
+        <field name="print_report_name">'Salary Registry - %s' % (object.payslip_run_id.name)</field>
+        <field name="binding_model_id" ref="model_havano_zim_report_wizard"/>
+        <field name="binding_type">report</field>
+        <field name="paperformat_id" ref="paperformat_salary_registry"/>
+    </record>
+
+    <!-- QWeb Template -->
+    <template id="report_salary_registry">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-set="company" t-value="doc.payslip_run_id.company_id.sudo()"/>
+                <t t-call="web.basic_layout">
+                    <div class="page" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 11px; line-height: 1.5; color: #333;">
+                        
+                        <!-- EXACT MATCH TO PAYSLIP HEADER -->
+                        <div id="payslip_header" style="margin-bottom: 20px;">
+                            <div style="margin-bottom: 15px;">
+                                <h2 style="font-weight: bold; text-transform: uppercase; color: #1a1a2e; margin: 0; letter-spacing: 1px; font-size: 24px;">Salary Registry</h2>
+                            </div>
+                            
+                            <table style="width: 100%; border-bottom: 2px solid #1a1a2e; padding-bottom: 10px; margin-bottom: 20px;">
+                                <tr>
+                                    <td style="width: 50%; vertical-align: bottom;">
+                                        <img t-if="company.logo" t-att-src="image_data_uri(company.logo)" style="max-height: 80px;" alt="Logo"/>
+                                        <h3 t-else="" style="color: #1a1a2e; font-weight: bold; margin: 0;"><span t-field="company.name"/></h3>
+                                    </td>
+                                    <td style="width: 50%; text-align: right; vertical-align: bottom; font-size: 14px; color: #555;">
+                                        <div style="font-weight: bold; color: #1a1a2e; font-size: 16px;"><span t-field="company.name"/></div>
+                                        <div t-if="company.street"><span t-field="company.street"/></div>
+                                        <div>
+                                            <t t-if="company.city"><span t-field="company.city"/></t>
+                                            <t t-if="company.country_id">, <span t-field="company.country_id.name"/></t>
+                                        </div>
+                                        <div t-if="company.phone">Phone: <span t-field="company.phone"/></div>
+                                        <div t-if="company.email">Email: <span t-field="company.email"/></div>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+
+                        <t t-foreach="report_data" t-as="data">
+                            <!-- PAY RUN DETAILS FORMATTED LIKE EMPLOYEE DETAILS -->
+                            <table style="width: 100%; margin-bottom: 20px;">
+                                <tr>
+                                    <td style="width: 50%; vertical-align: top;">
+                                        <div style="font-size: 13px;">
+                                            <strong style="color: #1a1a2e; text-transform: uppercase;">Pay Run Details:</strong><br/>
+                                            <span t-esc="data['run_name']"/><br/>
+                                            <span t-field="doc.payslip_run_id.date_start"/> to <span t-field="doc.payslip_run_id.date_end"/><br/>
+                                        </div>
+                                    </td>
+                                    <td style="width: 50%; vertical-align: top; text-align: right;">
+                                        <div style="font-size: 13px;">
+                                            <strong style="color: #1a1a2e; text-transform: uppercase;">Report Details:</strong><br/>
+                                            Total Employees: <span t-esc="len(data['employee_lines'])"/><br/>
+                                            Currency: <span t-field="company.currency_id.name"/><t t-if="company.hao_allow_multi_payroll_currency"> &amp; <span t-field="company.hao_secondary_payroll_currency_id.name"/></t><br/>
+                                            Report Date: <span t-esc="context_timestamp(datetime.datetime.now()).strftime('%Y-%m-%d')"/><br/>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </table>
+                            
+                            <table style="width: 100%; border-collapse: collapse; margin-bottom: 25px;">
+                                <thead>
+                                    <tr style="border-bottom: 2px solid #1a1a2e; font-size: 11px;">
+                                        <th style="text-align: left; padding: 6px 4px; font-weight: bold; text-transform: uppercase;">Employee Name</th>
+                                        <th style="text-align: left; padding: 6px 4px; font-weight: bold; text-transform: uppercase;">Department</th>
+                                        <th style="text-align: left; padding: 6px 4px; font-weight: bold; text-transform: uppercase;">Designation</th>
+                                        <th style="text-align: left; padding: 6px 4px; font-weight: bold; text-transform: uppercase;">Company</th>
+                                        <t t-foreach="data['rules']" t-as="rule">
+                                            <th style="text-align: right; padding: 6px 4px; font-weight: bold; text-transform: uppercase;"><t t-esc="rule.name"/></th>
+                                            <th t-if="company.hao_allow_multi_payroll_currency" style="text-align: right; padding: 6px 4px; font-weight: bold; text-transform: uppercase;"><t t-esc="rule.name"/> (<span t-field="company.hao_secondary_payroll_currency_id.name"/>)</th>
+                                        </t>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-foreach="data['employee_lines']" t-as="emp">
+                                        <tr>
+                                            <td style="padding: 6px 4px; font-size: 11px;"><t t-esc="emp['employee']"/></td>
+                                            <td style="padding: 6px 4px; font-size: 11px;"><t t-esc="emp['department']"/></td>
+                                            <td style="padding: 6px 4px; font-size: 11px;"><t t-esc="emp['job']"/></td>
+                                            <td style="padding: 6px 4px; font-size: 11px;"><t t-esc="emp['company']"/></td>
+                                            <t t-foreach="data['rules']" t-as="rule">
+                                                <td style="text-align: right; padding: 6px 4px; font-size: 11px;">
+                                                    <t t-esc="emp['amounts'][rule.id]" t-options="{'widget': 'float', 'precision': 2}"/>
+                                                </td>
+                                                <td t-if="company.hao_allow_multi_payroll_currency" style="text-align: right; padding: 6px 4px; font-size: 11px;">
+                                                    <t t-esc="emp['sec_amounts'][rule.id]" t-options="{'widget': 'float', 'precision': 2}"/>
+                                                </td>
+                                            </t>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                                <tfoot>
+                                    <tr style="border-top: 2px solid #1a1a2e; font-size: 11px; font-weight: bold;">
+                                        <td colspan="4" style="padding: 8px 4px; text-transform: uppercase; text-align: left;">Totals</td>
+                                        <t t-foreach="data['rules']" t-as="rule">
+                                            <td style="text-align: right; padding: 8px 4px;">
+                                                <t t-esc="data['totals'][rule.id]" t-options="{'widget': 'float', 'precision': 2}"/>
+                                            </td>
+                                            <td t-if="company.hao_allow_multi_payroll_currency" style="text-align: right; padding: 8px 4px;">
+                                                <t t-esc="data['sec_totals'][rule.id]" t-options="{'widget': 'float', 'precision': 2}"/>
+                                            </td>
+                                        </t>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </t>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

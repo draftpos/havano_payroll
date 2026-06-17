@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="hr_salary_rule_form_inherit_havano" model="ir.ui.view">
+        <field name="name">hr.salary.rule.form.inherit.havano</field>
+        <field name="model">hr.salary.rule</field>
+        <field name="inherit_id" ref="hr_payroll.hr_salary_rule_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='amount_fix']" position="after">
+                <field name="hao_secondary_fixed_amount" invisible="amount_select != 'fix'"/>
+            </xpath>
+            <xpath expr="//notebook" position="before">
+                <group>
+                    <field name="hao_allow_multi_payroll_currency" invisible="1"/>
+                    <field name="hao_currency_application" readonly="not hao_allow_multi_payroll_currency"/>
+                </group>
+            </xpath>
+            <xpath expr="//notebook" position="inside">
+                <page string="NSSA Settings" name="nssa_settings" invisible="code != 'NSSA'">
+                    <group>
+                        <group>
+                            <field name="hao_nssa_percentage"/>
+                            <field name="hao_nssa_base_cap"/>
+                        </group>
+                        <group>
+                            <field name="hao_allow_multi_payroll_currency" invisible="1"/>
+                            <label for="hao_nssa_secondary_cap" invisible="not hao_allow_multi_payroll_currency" string=" "/>
+                            <div class="o_row" invisible="not hao_allow_multi_payroll_currency">
+                                <field name="hao_nssa_secondary_cap_label" nolabel="1" readonly="1" class="fw-bold" style="border:none; background:transparent; padding:0; width:auto; margin-right:5px;"/>
+                                <field name="hao_nssa_secondary_cap" nolabel="1"/>
+                            </div>
+                            <field name="hao_secondary_payroll_currency_id" invisible="1"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                    </group>
+                </page>
+                <page string="AIDS Levy Settings" name="aids_levy_settings" invisible="code != 'AIDS'">
+                    <group>
+                        <group>
+                            <field name="hao_aids_levy_pct"/>
+                        </group>
+                    </group>
+                </page>
+                <page string="NEC Settings" name="nec_settings" invisible="code not in ('NEC', 'NEC_COMP')">
+                    <group>
+                        <group>
+                            <field name="hao_nec_pct"/>
+                        </group>
+                    </group>
+                </page>
+                <page string="Statutory Percentage Setting" name="statutory_settings" invisible="code not in ('LAPF_EMP', 'LAPF_COMP', 'UFAWUZ', 'ZFBAWU')">
+                    <group>
+                        <group>
+                            <field name="hao_rule_percentage"/>
+                        </group>
+                    </group>
+                </page>
+                <page string="Policy Settings" name="policy_settings" invisible="code not in ('FUNERAL', 'MEDAID')">
+                    <group>
+                        <group>
+                            <field name="hao_policy_payment_mode"/>
+                            <field name="hao_policy_emp_pct" invisible="hao_policy_payment_mode != 'shared'"/>
+                            <field name="hao_policy_comp_pct" invisible="hao_policy_payment_mode != 'shared'"/>
+                        </group>
+                        <group>
+                            <field name="hao_apply_tax_credit" invisible="code != 'MEDAID'"/>
+                        </group>
+                    </group>
+                </page>
+                <page string="Tax Credit Settings" name="tax_credit_settings" invisible="code != 'TAX_CREDIT'">
+                    <group>
+                        <group>
+                            <field name="hao_tax_credit_elderly"/>
+                            <field name="hao_tax_credit_blind"/>
+                            <field name="hao_tax_credit_disabled"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

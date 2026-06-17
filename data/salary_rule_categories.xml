@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="0">
+
+        <record id="category_taxable_income" model="hr.salary.rule.category">
+            <field name="name">Taxable Income</field>
+            <field name="code">TAXABLE</field>
+        </record>
+
+        <record id="category_non_taxable_income" model="hr.salary.rule.category">
+            <field name="name">Non-Taxable Income</field>
+            <field name="code">NONTAX</field>
+        </record>
+
+        <record id="category_bonus" model="hr.salary.rule.category">
+            <field name="name">Bonus</field>
+            <field name="code">BONUS</field>
+        </record>
+
+        <record id="category_allowable_deduction" model="hr.salary.rule.category">
+            <field name="name">Allowable Deduction</field>
+            <field name="code">ALLOW_DED</field>
+        </record>
+
+        <record id="category_non_allowable_deduction" model="hr.salary.rule.category">
+            <field name="name">Non-Allowable Deduction</field>
+            <field name="code">NONALLOW_DED</field>
+        </record>
+
+        <record id="category_nec" model="hr.salary.rule.category">
+            <field name="name">NEC</field>
+            <field name="code">NEC</field>
+        </record>
+
+        <record id="category_nssa" model="hr.salary.rule.category">
+            <field name="name">NSSA</field>
+            <field name="code">NSSA</field>
+        </record>
+
+        <record id="category_zimdef" model="hr.salary.rule.category">
+            <field name="name">ZIMDEF</field>
+            <field name="code">ZIMDEF</field>
+        </record>
+
+        <record id="category_medical_aid" model="hr.salary.rule.category">
+            <field name="name">Medical Aid</field>
+            <field name="code">MED_AID</field>
+        </record>
+
+        <record id="category_funeral" model="hr.salary.rule.category">
+            <field name="name">Funeral Policy</field>
+            <field name="code">FUNERAL</field>
+        </record>
+
+        <record id="category_tax_credit" model="hr.salary.rule.category">
+            <field name="name">Tax Credit</field>
+            <field name="code">TAX_CREDIT</field>
+        </record>
+
+        <record id="category_loan" model="hr.salary.rule.category">
+            <field name="name">Loan</field>
+            <field name="code">LOAN</field>
+        </record>
+
+        <record id="category_paye" model="hr.salary.rule.category">
+            <field name="name">PAYE</field>
+            <field name="code">PAYE</field>
+        </record>
+
+        <record id="category_aids_levy" model="hr.salary.rule.category">
+            <field name="name">AIDS Levy</field>
+            <field name="code">AIDS_LEVY</field>
+        </record>
+
+    </data>
+</odoo>

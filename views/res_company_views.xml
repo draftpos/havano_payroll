@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_company_form_inherit_havano_payroll" model="ir.ui.view">
+        <field name="name">res.company.form.inherit.havano.payroll</field>
+        <field name="model">res.company</field>
+        <field name="inherit_id" ref="base.view_company_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Havano Payroll Settings" name="havano_payroll_settings">
+                    <group>
+                        <group string="Payroll Currency Settings">
+                            <field name="currency_id" string="Base Currency" readonly="1"/>
+                            <field name="hao_allow_multi_payroll_currency"/>
+                            <field name="hao_secondary_payroll_currency_id" 
+                                   invisible="not hao_allow_multi_payroll_currency"
+                                   required="hao_allow_multi_payroll_currency"/>
+                            <field name="hao_exchange_rate" 
+                                   invisible="not hao_allow_multi_payroll_currency"
+                                   required="hao_allow_multi_payroll_currency"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

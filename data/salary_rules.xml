@@ -1,0 +1,442 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="0">
+
+        <record id="structure_havano_base" model="hr.payroll.structure">
+            <field name="name">Havano Base Structure</field>
+            <field name="type_id" ref="hr.structure_type_employee"/>
+            <field name="country_id" ref="base.zw"/>
+        </record>
+
+        <record id="rule_basic_salary" model="hr.salary.rule">
+            <field name="name">Basic Salary</field>
+            <field name="code">BASIC</field>
+            <field name="sequence">100</field>
+            <field name="category_id" ref="hr_payroll.BASIC"/>
+            <field name="struct_id" ref="structure_havano_base"/>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">result = payslip.paid_amount</field>
+        </record>
+
+        <record id="rule_nssa" model="hr.salary.rule">
+            <field name="name">NSSA</field>
+            <field name="code">NSSA</field>
+            <field name="sequence">110</field>
+            <field name="category_id" ref="hr_payroll.DED"/>
+            <field name="struct_id" ref="structure_havano_base"/>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">
+nssa_rule = payslip.env['hr.salary.rule'].search([('code', '=', 'NSSA')], limit=1)
+pct = nssa_rule.hao_nssa_percentage if nssa_rule else 4.5
+ceiling = nssa_rule.hao_nssa_base_cap if nssa_rule else 700.0
+allowances = categories['ALW'] if 'ALW' in categories else 0.0
+basic = categories['BASIC'] if 'BASIC' in categories else 0.0
+
+if allowances &gt; basic:
+    base_nssa = basic + allowances
+else:
+    base_nssa = basic
+
+if base_nssa &gt; ceiling:
+    base_nssa = ceiling
+
+result = - (base_nssa * (pct / 100.0))
+            </field>
+        </record>
+
+        <record id="rule_paye" model="hr.salary.rule">
+            <field name="name">PAYE</field>
+            <field name="code">PAYE</field>
+            <field name="sequence">120</field>
+            <field name="category_id" ref="hr_payroll.DED"/>
+            <field name="struct_id" ref="structure_havano_base"/>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">
+gross = categories['GROSS'] if 'GROSS' in categories else 0.0
+nssa_deduction = abs(result_rules['NSSA']['total']) if 'NSSA' in result_rules else 0.0
+taxable_income = gross - nssa_deduction
+
+if taxable_income &lt;= 0:
+    result = 0.0
+else:
+    # 1. Map Odoo Frequency to ZIMRA Frequency
+    contract_freq = payslip.version_id.schedule_pay if payslip.version_id else 'monthly'
+    freq_map = {
+        'daily': 'daily',
+        'weekly': 'weekly',
+        'bi-weekly': 'fortnightly',
+        'monthly': 'monthly',
+        'annually': 'yearly',
+        'yearly': 'yearly',
+    }
+    zimra_freq = freq_map.get(contract_freq, 'monthly')
+    
+    # 2. Get Currency (Using company currency as base, or employee's specific currency if available)
+    currency_id = payslip.company_id.currency_id.id
+    
+    # 3. Fetch matching active bracket
+    domain = [
+        ('currency_id', '=', currency_id),
+        ('frequency', '=', zimra_freq),
+        ('active', '=', True)
+    ]
+    brackets = payslip.env['zimra.tax.table'].search(domain, order='min_income asc')
+    
+    paye_amount = 0.0
+    for bracket in brackets:
+        if taxable_income &gt;= bracket.min_income and (bracket.max_income == 0 or taxable_income &lt;= bracket.max_income):
+            paye_amount = (taxable_income * bracket.rate / 100.0) - bracket.deduction
+            break
+            
+    # Apply Tax Credit
+    tax_credit = result_rules['TAX_CREDIT']['total'] if 'TAX_CREDIT' in result_rules else 0.0
+    paye_amount = paye_amount - tax_credit
+            
+    result = -max(paye_amount, 0.0)
+            </field>
+        </record>
+
+        <record id="rule_aids_levy" model="hr.salary.rule">
+            <field name="name">AIDS Levy</field>
+            <field name="code">AIDS</field>
+            <field name="sequence">130</field>
+            <field name="category_id" ref="hr_payroll.DED"/>
+            <field name="struct_id" ref="structure_havano_base"/>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">
+paye = abs(result_rules['PAYE']['total']) if 'PAYE' in result_rules else 0.0
+rule_record = payslip.env['hr.salary.rule'].search([('code', '=', 'AIDS')], limit=1)
+pct = rule_record.hao_aids_levy_pct if rule_record else 3.0
+result = - (paye * (pct / 100.0))
+            </field>
+        </record>
+
+        <!-- NSSA Company Contribution -->
+        <record id="rule_nssa_comp" model="hr.salary.rule">
+            <field name="name">NSSA (Company)</field>
+            <field name="code">NSSA_COMP</field>
+            <field name="sequence">111</field>
+            <field name="category_id" ref="hr_payroll.COMP"/>
+            <field name="struct_id" ref="structure_havano_base"/>
+            <field name="appears_on_employee_cost_dashboard">True</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">
+result = abs(result_rules['NSSA']['total']) if 'NSSA' in result_rules else 0.0
+            </field>
+        </record>
+
+        <!-- NEC Deduction -->
+        <record id="rule_nec" model="hr.salary.rule">
+            <field name="name">NEC</field>
+            <field name="code">NEC</field>
+            <field name="sequence">112</field>
+            <field name="category_id" ref="hr_payroll.DED"/>
+            <field name="struct_id" ref="structure_havano_base"/>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">
+basic = categories['BASIC'] if 'BASIC' in categories else 0.0
+rule_record = payslip.env['hr.salary.rule'].search([('code', '=', 'NEC')], limit=1)
+pct = rule_record.hao_nec_pct if rule_record else 1.5
+result = - (basic * (pct / 100.0))
+            </field>
+        </record>
+
+        <!-- NEC Company Contribution -->
+        <record id="rule_nec_comp" model="hr.salary.rule">
+            <field name="name">NEC (Company)</field>
+            <field name="code">NEC_COMP</field>
+            <field name="sequence">113</field>
+            <field name="category_id" ref="hr_payroll.COMP"/>
+            <field name="struct_id" ref="structure_havano_base"/>
+            <field name="appears_on_employee_cost_dashboard">True</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">
+result = abs(result_rules['NEC']['total']) if 'NEC' in result_rules else 0.0
+            </field>
+        </record>
+
+        <!-- ZIMDEF Company Contribution -->
+        <record id="rule_zimdef_comp" model="hr.salary.rule">
+            <field name="name">ZIMDEF (Company)</field>
+            <field name="code">ZIMDEF_COMP</field>
+            <field name="sequence">114</field>
+            <field name="category_id" ref="hr_payroll.COMP"/>
+            <field name="struct_id" ref="structure_havano_base"/>
+            <field name="appears_on_employee_cost_dashboard">True</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">
+basic = categories['BASIC'] if 'BASIC' in categories else 0.0
+result = basic * 0.01
+            </field>
+        </record>
+
+        <!-- LAPF Employee -->
+        <record id="rule_lapf_employee" model="hr.salary.rule">
+            <field name="name">LAPF</field>
+            <field name="code">LAPF_EMP</field>
+            <field name="sequence">113</field>
+            <field name="category_id" ref="hr_payroll.DED"/>
+            <field name="struct_id" ref="structure_havano_base"/>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">
+basic = categories['BASIC'] if 'BASIC' in categories else 0.0
+rule_record = payslip.env['hr.salary.rule'].search([('code', '=', 'LAPF_EMP')], limit=1)
+pct = rule_record.hao_rule_percentage if rule_record and rule_record.hao_rule_percentage else 6.0
+result = - (basic * (pct / 100.0))
+            </field>
+        </record>
+
+        <!-- LAPF Employer -->
+        <record id="rule_lapf_employer" model="hr.salary.rule">
+            <field name="name">LAPF Employer</field>
+            <field name="code">LAPF_COMP</field>
+            <field name="sequence">113</field>
+            <field name="category_id" ref="hr_payroll.COMP"/>
+            <field name="struct_id" ref="structure_havano_base"/>
+            <field name="appears_on_employee_cost_dashboard">True</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">
+basic = categories['BASIC'] if 'BASIC' in categories else 0.0
+rule_record = payslip.env['hr.salary.rule'].search([('code', '=', 'LAPF_COMP')], limit=1)
+pct = rule_record.hao_rule_percentage if rule_record and rule_record.hao_rule_percentage else 17.3
+result = basic * (pct / 100.0)
+            </field>
+        </record>
+
+        <!-- UFAWUZ -->
+        <record id="rule_ufawuz" model="hr.salary.rule">
+            <field name="name">UFAWUZ</field>
+            <field name="code">UFAWUZ</field>
+            <field name="sequence">113</field>
+            <field name="category_id" ref="hr_payroll.DED"/>
+            <field name="struct_id" ref="structure_havano_base"/>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">
+basic = categories['BASIC'] if 'BASIC' in categories else 0.0
+rule_record = payslip.env['hr.salary.rule'].search([('code', '=', 'UFAWUZ')], limit=1)
+pct = rule_record.hao_rule_percentage if rule_record and rule_record.hao_rule_percentage else 2.0
+result = - (basic * (pct / 100.0))
+            </field>
+        </record>
+
+        <!-- ZFBAWU -->
+        <record id="rule_zfbawu" model="hr.salary.rule">
+            <field name="name">ZFBAWU</field>
+            <field name="code">ZFBAWU</field>
+            <field name="sequence">113</field>
+            <field name="category_id" ref="hr_payroll.DED"/>
+            <field name="struct_id" ref="structure_havano_base"/>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">
+basic = categories['BASIC'] if 'BASIC' in categories else 0.0
+rule_record = payslip.env['hr.salary.rule'].search([('code', '=', 'ZFBAWU')], limit=1)
+pct = rule_record.hao_rule_percentage if rule_record and rule_record.hao_rule_percentage else 4.0
+result = - (basic * (pct / 100.0))
+            </field>
+        </record>
+
+        <!-- Funeral Policy Deduction -->
+        <record id="rule_funeral" model="hr.salary.rule">
+            <field name="name">Funeral Policy</field>
+            <field name="code">FUNERAL</field>
+            <field name="sequence">115</field>
+            <field name="category_id" ref="hr_payroll.DED"/>
+            <field name="struct_id" ref="structure_havano_base"/>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">
+policy_input = payslip.version_id.hao_funeral_policy_amount if payslip.version_id else 0.0
+policy_currency = payslip.version_id.hao_funeral_policy_currency_id if payslip.version_id else False
+company_currency = payslip.company_id.currency_id
+if policy_input and policy_currency and policy_currency != company_currency:
+    secondary_currency = payslip.company_id.hao_secondary_payroll_currency_id
+    version = payslip.version_id
+    employee = payslip.employee_id
+    if policy_currency == secondary_currency and payslip.company_id.hao_exchange_rate:
+        effective_rate = payslip.company_id.hao_exchange_rate
+        policy_input = policy_input / effective_rate
+    else:
+        policy_input = policy_currency._convert(policy_input, company_currency, payslip.company_id, payslip.date_to or payslip.date_from)
+if not policy_input:
+    for line in payslip.input_line_ids:
+        if line.input_type_id.code == 'FUNERAL_COST' or 'funeral' in line.name.lower() or (line.input_type_id.name and 'funeral' in line.input_type_id.name.lower()):
+            policy_input += line.amount
+
+rule_record = payslip.env['hr.salary.rule'].search([('code', '=', 'FUNERAL')], limit=1)
+if rule_record.hao_policy_payment_mode == 'employee':
+    result = -policy_input
+elif rule_record.hao_policy_payment_mode == 'shared':
+    result = - (policy_input * (rule_record.hao_policy_emp_pct / 100.0))
+else:
+    result = 0.0
+            </field>
+        </record>
+
+        <!-- Funeral Policy Company Contribution -->
+        <record id="rule_funeral_comp" model="hr.salary.rule">
+            <field name="name">Funeral Policy (Company)</field>
+            <field name="code">FUNERAL_COMP</field>
+            <field name="sequence">115</field>
+            <field name="category_id" ref="hr_payroll.COMP"/>
+            <field name="struct_id" ref="structure_havano_base"/>
+            <field name="appears_on_employee_cost_dashboard">True</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">
+rule_record = payslip.env['hr.salary.rule'].search([('code', '=', 'FUNERAL')], limit=1)
+if rule_record.hao_policy_payment_mode == 'employer':
+    policy_input = payslip.version_id.hao_funeral_policy_amount if payslip.version_id else 0.0
+    policy_currency = payslip.version_id.hao_funeral_policy_currency_id if payslip.version_id else False
+    company_currency = payslip.company_id.currency_id
+    if policy_input and policy_currency and policy_currency != company_currency:
+        secondary_currency = payslip.company_id.hao_secondary_payroll_currency_id
+        version = payslip.version_id
+        employee = payslip.employee_id
+        if policy_currency == secondary_currency and payslip.company_id.hao_exchange_rate:
+            effective_rate = payslip.company_id.hao_exchange_rate
+            policy_input = policy_input / effective_rate
+        else:
+            policy_input = policy_currency._convert(policy_input, company_currency, payslip.company_id, payslip.date_to or payslip.date_from)
+    if not policy_input:
+        for line in payslip.input_line_ids:
+            if line.input_type_id.code == 'FUNERAL_COST' or 'funeral' in line.name.lower() or (line.input_type_id.name and 'funeral' in line.input_type_id.name.lower()):
+                policy_input += line.amount
+    result = policy_input
+elif rule_record.hao_policy_payment_mode == 'shared':
+    emp_deduction = abs(result_rules['FUNERAL']['total']) if 'FUNERAL' in result_rules else 0.0
+    emp_pct = rule_record.hao_policy_emp_pct
+    comp_pct = rule_record.hao_policy_comp_pct
+    if emp_pct &gt; 0:
+        result = (emp_deduction / (emp_pct / 100.0)) * (comp_pct / 100.0)
+    else:
+        result = 0.0
+else:
+    result = 0.0
+            </field>
+        </record>
+
+        <!-- Medical Aid Deduction -->
+        <record id="rule_medaid" model="hr.salary.rule">
+            <field name="name">Medical Aid</field>
+            <field name="code">MEDAID</field>
+            <field name="sequence">116</field>
+            <field name="category_id" ref="hr_payroll.DED"/>
+            <field name="struct_id" ref="structure_havano_base"/>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">
+policy_input = payslip.version_id.hao_medical_aid_amount if payslip.version_id else 0.0
+policy_currency = payslip.version_id.hao_medical_aid_currency_id if payslip.version_id else False
+company_currency = payslip.company_id.currency_id
+if policy_input and policy_currency and policy_currency != company_currency:
+    secondary_currency = payslip.company_id.hao_secondary_payroll_currency_id
+    version = payslip.version_id
+    employee = payslip.employee_id
+    if policy_currency == secondary_currency and payslip.company_id.hao_exchange_rate:
+        effective_rate = payslip.company_id.hao_exchange_rate
+        policy_input = policy_input / effective_rate
+    else:
+        policy_input = policy_currency._convert(policy_input, company_currency, payslip.company_id, payslip.date_to or payslip.date_from)
+if not policy_input:
+    for line in payslip.input_line_ids:
+        if line.input_type_id.code == 'MEDAID_COST' or 'medical aid' in line.name.lower() or (line.input_type_id.name and 'medical aid' in line.input_type_id.name.lower()):
+            policy_input += line.amount
+
+rule_record = payslip.env['hr.salary.rule'].search([('code', '=', 'MEDAID')], limit=1)
+if rule_record.hao_policy_payment_mode == 'employee':
+    result = -policy_input
+elif rule_record.hao_policy_payment_mode == 'shared':
+    result = - (policy_input * (rule_record.hao_policy_emp_pct / 100.0))
+else:
+    result = 0.0
+            </field>
+        </record>
+
+        <!-- Medical Aid Company Contribution -->
+        <record id="rule_medaid_comp" model="hr.salary.rule">
+            <field name="name">Medical Aid (Company)</field>
+            <field name="code">MEDAID_COMP</field>
+            <field name="sequence">116</field>
+            <field name="category_id" ref="hr_payroll.COMP"/>
+            <field name="struct_id" ref="structure_havano_base"/>
+            <field name="appears_on_employee_cost_dashboard">True</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">
+rule_record = payslip.env['hr.salary.rule'].search([('code', '=', 'MEDAID')], limit=1)
+if rule_record.hao_policy_payment_mode == 'employer':
+    policy_input = payslip.version_id.hao_medical_aid_amount if payslip.version_id else 0.0
+    policy_currency = payslip.version_id.hao_medical_aid_currency_id if payslip.version_id else False
+    company_currency = payslip.company_id.currency_id
+    if policy_input and policy_currency and policy_currency != company_currency:
+        secondary_currency = payslip.company_id.hao_secondary_payroll_currency_id
+        version = payslip.version_id
+        employee = payslip.employee_id
+        if policy_currency == secondary_currency and payslip.company_id.hao_exchange_rate:
+            effective_rate = payslip.company_id.hao_exchange_rate
+            policy_input = policy_input / effective_rate
+        else:
+            policy_input = policy_currency._convert(policy_input, company_currency, payslip.company_id, payslip.date_to or payslip.date_from)
+    if not policy_input:
+        for line in payslip.input_line_ids:
+            if line.input_type_id.code == 'MEDAID_COST' or 'medical aid' in line.name.lower() or (line.input_type_id.name and 'medical aid' in line.input_type_id.name.lower()):
+                policy_input += line.amount
+    result = policy_input
+elif rule_record.hao_policy_payment_mode == 'shared':
+    emp_deduction = abs(result_rules['MEDAID']['total']) if 'MEDAID' in result_rules else 0.0
+    emp_pct = rule_record.hao_policy_emp_pct
+    comp_pct = rule_record.hao_policy_comp_pct
+    if emp_pct &gt; 0:
+        result = (emp_deduction / (emp_pct / 100.0)) * (comp_pct / 100.0)
+    else:
+        result = 0.0
+else:
+    result = 0.0
+            </field>
+        </record>
+
+        <!-- Tax Credit -->
+        <record id="rule_tax_credit" model="hr.salary.rule">
+            <field name="name">Tax Credit</field>
+            <field name="code">TAX_CREDIT</field>
+            <field name="sequence">117</field>
+            <field name="category_id" ref="hr_payroll.ALW"/>
+            <field name="struct_id" ref="structure_havano_base"/>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">
+medaid_rule = payslip.env['hr.salary.rule'].search([('code', '=', 'MEDAID')], limit=1)
+tax_credit_rule = payslip.env['hr.salary.rule'].search([('code', '=', 'TAX_CREDIT')], limit=1)
+
+medaid_deduction = abs(result_rules['MEDAID']['total']) if 'MEDAID' in result_rules else 0.0
+total_credit = 0.0
+
+if medaid_rule.hao_apply_tax_credit:
+    total_credit += medaid_deduction * 0.50
+
+employee = payslip.employee_id
+if employee.is_elderly:
+    total_credit += tax_credit_rule.hao_tax_credit_elderly
+if employee.is_blind:
+    total_credit += tax_credit_rule.hao_tax_credit_blind
+if employee.is_disabled:
+    total_credit += tax_credit_rule.hao_tax_credit_disabled
+
+result = total_credit
+            </field>
+        </record>
+        <!-- Cash in Lieu of Leave -->
+        <record id="rule_cil" model="hr.salary.rule">
+            <field name="name">Cash in Lieu of Leave</field>
+            <field name="code">CIL</field>
+            <field name="sequence">50</field>
+            <field name="category_id" ref="hr_payroll.ALW"/>
+            <field name="struct_id" ref="structure_havano_base"/>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">
+cil_days = 0.0
+for line in payslip.input_line_ids:
+    if line.input_type_id.code == 'CIL' or 'cash in lieu' in line.name.lower() or (line.input_type_id.name and 'cash in lieu' in line.input_type_id.name.lower()):
+        cil_days += line.amount
+            
+basic = categories['BASIC'] if 'BASIC' in categories else 0.0
+result = cil_days * (basic / 26.0)
+            </field>
+        </record>
+    </data>
+</odoo>
