@@ -10,6 +10,7 @@ class HavanoZimReportWizard(models.TransientModel):
         ('nec', 'NEC Report'),
         ('nssa_p4', 'NSSA P4 Report'),
         ('nssa_employer', 'NSSA Report Employer'),
+        ('zimra_p2', 'ZIMRA P2 Report'),
         ('summary', 'Payroll Summary Report'),
         ('registry', 'Salary Registry Report')
     ], string="Report Type", required=True)
@@ -35,7 +36,9 @@ class HavanoZimReportWizard(models.TransientModel):
                     ('slip_id.payslip_run_id', '=', self.payslip_run_id.id), 
                     ('slip_id.state', '!=', 'cancel'), 
                     ('total', '!=', 0.0),
-                    ('salary_rule_id.appears_on_payslip', '=', True)
+                    ('salary_rule_id.appears_on_payslip', '=', True),
+                    ('salary_rule_id.category_id.code', '!=', 'COMP'),
+                    ('salary_rule_id.code', '!=', 'GROSS')
                 ],
                 'context': {
                     'pivot_row_groupby': ['salary_rule_id'],
@@ -52,7 +55,9 @@ class HavanoZimReportWizard(models.TransientModel):
                     ('slip_id.payslip_run_id', '=', self.payslip_run_id.id), 
                     ('slip_id.state', '!=', 'cancel'), 
                     ('total', '!=', 0.0),
-                    ('salary_rule_id.appears_on_payslip', '=', True)
+                    ('salary_rule_id.appears_on_payslip', '=', True),
+                    ('salary_rule_id.category_id.code', '!=', 'COMP'),
+                    ('salary_rule_id.code', '!=', 'GROSS')
                 ],
                 'context': {
                     'pivot_row_groupby': ['employee_id'],
@@ -60,6 +65,8 @@ class HavanoZimReportWizard(models.TransientModel):
                     'pivot_measures': ['total', 'hao_secondary_total'],
                 }
             }
+        elif self.report_type == 'zimra_p2':
+            return self.action_print_report()
             
         action['domain'] = domain
         action['context'] = {
@@ -76,4 +83,6 @@ class HavanoZimReportWizard(models.TransientModel):
             return self.env.ref('havano_payroll.action_report_payroll_summary').report_action(self)
         if self.report_type == 'registry':
             return self.env.ref('havano_payroll.action_report_salary_registry').report_action(self)
+        if self.report_type == 'zimra_p2':
+            return self.env.ref('havano_payroll.action_report_zimra_p2').report_action(self)
         return self.env.ref('havano_payroll.action_report_zim_statutory').report_action(self)

@@ -59,12 +59,20 @@
         <field name="context">{'default_report_type': 'registry'}</field>
     </record>
 
+    <record id="action_wizard_zimra_p2" model="ir.actions.act_window">
+        <field name="name">ZIMRA P2 Report</field>
+        <field name="res_model">havano.zim.report.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="context">{'default_report_type': 'zimra_p2'}</field>
+    </record>
+
     <!-- Action Menu (Cog) Button for Pivot/List views -->
     <record id="action_print_salary_registry_from_lines" model="ir.actions.server">
         <field name="name">Print PDF</field>
         <field name="model_id" ref="hr_payroll.model_hr_payslip_line"/>
         <field name="binding_model_id" ref="hr_payroll.model_hr_payslip_line"/>
-        <field name="binding_view_types">list,pivot</field>
+        <field name="binding_view_types">list,form</field>
         <field name="state">code</field>
         <field name="code">
 if records:

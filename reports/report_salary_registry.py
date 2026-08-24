@@ -17,7 +17,8 @@ class ReportSalaryRegistry(models.AbstractModel):
             for slip in slips:
                 for line in slip.line_ids:
                     if line.total != 0.0 and line.salary_rule_id.appears_on_payslip:
-                        rule_ids.add(line.salary_rule_id.id)
+                        if line.salary_rule_id.category_id.code != 'COMP' and line.salary_rule_id.code != 'GROSS':
+                            rule_ids.add(line.salary_rule_id.id)
                         
             # Get ordered rules
             rules = self.env['hr.salary.rule'].browse(list(rule_ids)).sorted(key=lambda r: r.sequence)

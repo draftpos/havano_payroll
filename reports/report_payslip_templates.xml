@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <template id="report_payslip_bellina">
+            <t t-call="web.html_container">
+                <div class="page" style="font-family: Arial, Helvetica, sans-serif; font-size: 8.5pt; margin: 0; padding: 0; color: #000000 !important;">
+                    <t t-foreach="docs" t-as="o">
+
+                        <!-- OUTER BORDER TABLE -->
+                        <table style="width: 100%; border-collapse: collapse; border: 1px solid #000; page-break-inside: avoid; margin-bottom: 8px; color: #000 !important;">
+
+                            <!-- ── HEADER ROW: Emp# | Employee Name | Company ── -->
+                            <tr style="border-bottom: 1px solid #000; background-color: #f0f0f0;">
+                                <td style="width: 25%; padding: 2px 4px; font-weight: bold; font-size: 8.5pt; vertical-align: middle;">
+                                    <span style="color:#000 !important;"><t t-esc="o.employee_id.identification_id or ''"/></span>
+                                </td>
+                                <td style="width: 42%; padding: 2px 4px; font-size: 10pt; font-weight: bold; vertical-align: middle;">
+                                    <span style="color:#000 !important;"><t t-esc="o.employee_id.name.upper()"/></span>
+                                </td>
+                                <td style="width: 33%; padding: 2px 4px; text-align: right; font-size: 9pt; font-weight: bold; vertical-align: middle;">
+                                    <span style="color:#000 !important;"><t t-esc="o.company_id.name"/></span>
+                                </td>
+                            </tr>
+
+                            <!-- ── MAIN CONTENT ROW ── -->
+                            <tr>
+
+                                <!-- LEFT INFO BLOCK -->
+                                <td style="width: 33%; vertical-align: top; border-right: 1px solid #000; padding: 2px 4px;">
+                                    <table style="width: 100%; border-collapse: collapse; font-size: 8pt; color: #000 !important; line-height: 1.1;">
+                                        <t t-set="basic_line" t-value="o.line_ids.filtered(lambda l: l.code == 'BASIC')"/>
+                                        <t t-set="main_bank" t-value="o.employee_id.bank_account_ids[0] if o.employee_id.bank_account_ids else None"/>
+                                        <tr><td style="white-space:nowrap; width: 40%; padding:1px 2px; color:#000;">Period</td><td style="padding:1px 2px; color:#000;">:<t t-esc="o.date_from.strftime('%Y/%m')"/></td></tr>
+                                        <tr><td style="white-space:nowrap; padding:1px 2px; color:#000;">Nat ID</td><td style="padding:1px 2px; color:#000;">:<t t-esc="o.employee_id.identification_id or ''"/></td></tr>
+                                        <tr><td style="white-space:nowrap; padding:1px 2px; color:#000;">Pay Method</td><td style="padding:1px 2px; color:#000;">:Transfer</td></tr>
+                                        <tr><td style="white-space:nowrap; padding:1px 2px; color:#000;">Pay Point</td><td style="padding:1px 2px; color:#000;">:<t t-esc="o.company_id.name.upper()"/></td></tr>
+                                        <tr><td style="white-space:nowrap; padding:1px 2px; color:#000;">Cost Centre</td><td style="padding:1px 2px; color:#000;">:<t t-esc="o.employee_id.department_id.name or ''"/></td></tr>
+                                        <tr><td style="white-space:nowrap; padding:1px 2px; color:#000;">Int. Grade</td><td style="padding:1px 2px; color:#000;">:<t t-esc="o.employee_id.nec_grade_id.name or ''"/></td></tr>
+                                        <tr><td style="white-space:nowrap; padding:1px 2px; color:#000;">Department</td><td style="padding:1px 2px; color:#000;">:<t t-esc="o.employee_id.department_id.name or ''"/></td></tr>
+                                        <tr><td style="white-space:nowrap; padding:1px 2px; color:#000;">SSN</td><td style="padding:1px 2px; color:#000;">:<t t-esc="o.employee_id.ssnid if 'ssnid' in o.employee_id else o.employee_id.sinid"/></td></tr>
+                                        <tr><td style="white-space:nowrap; padding:1px 2px; color:#000;">NEC Grade</td><td style="padding:1px 2px; color:#000;">:<t t-esc="o.employee_id.nec_grade_id.name or ''"/></td></tr>
+                                        <tr><td style="white-space:nowrap; padding:1px 2px; color:#000;">Position</td><td style="padding:1px 2px; color:#000;">:<t t-esc="o.employee_id.job_id.name or ''"/></td></tr>
+                                        <tr><td style="white-space:nowrap; padding:1px 2px; color:#000;">Pay Rate</td><td style="padding:1px 2px; color:#000;">:<t t-esc="o.basic_wage or 0.0" t-options='{"widget": "float", "precision": 2}'/></td></tr>
+                                        <tr><td style="white-space:nowrap; padding:1px 2px; color:#000;">Leave Bal</td><td style="padding:1px 2px; color:#000;">:<t t-esc="round(o.annual_leave_balance, 2) if 'annual_leave_balance' in o else 0.0"/></td></tr>
+                                        <tr><td style="white-space:nowrap; padding:1px 2px; color:#000;">Sick ToDate</td><td style="padding:1px 2px; color:#000;">:0</td></tr>
+                                        <tr><td style="white-space:nowrap; padding:1px 2px; color:#000;">Loan Bal</td><td style="padding:1px 2px; color:#000;">:</td></tr>
+                                        <tr><td style="white-space:nowrap; padding:1px 2px; color:#000;">Bank</td><td style="padding:1px 2px; color:#000;">:<t t-esc="main_bank.bank_id.name if main_bank else ''"/></td></tr>
+                                        <tr><td style="white-space:nowrap; padding:1px 2px; color:#000;">ACC No.</td><td style="padding:1px 2px; color:#000;">:<t t-esc="main_bank.acc_number if main_bank else ''"/></td></tr>
+                                        <tr><td style="white-space:nowrap; padding:1px 2px; color:#000;">Date Engaged</td><td style="padding:1px 2px; color:#000;">:<t t-esc="o.employee_id.first_contract_date.strftime('%d/%m/%Y') if 'first_contract_date' in o.employee_id and o.employee_id.first_contract_date else ''"/></td></tr>
+                                        <tr><td style="white-space:nowrap; padding:1px 2px; color:#000;">Pay day</td><td style="padding:1px 2px; color:#000;">:<t t-esc="o.date_to.strftime('%d/%m/%Y') if o.date_to else ''"/></td></tr>
+                                    </table>
+                                </td>
+
+                                <!-- RIGHT SALARY TABLE -->
+                                <td colspan="2" style="width: 67%; vertical-align: top; padding: 0;">
+                                    <table style="width: 100%; border-collapse: collapse; font-size: 8pt; color: #000 !important; line-height: 1.1;">
+
+                                        <!-- Column Headers -->
+                                        <thead>
+                                            <tr style="border-bottom: 1px solid #000; background-color: #f0f0f0;">
+                                                <th style="border-right:1px solid #000; padding:2px 4px; text-align:left;  font-weight:bold; color:#000;">DESCRIPTION</th>
+                                                <th style="border-right:1px solid #000; padding:2px 4px; text-align:center; font-weight:bold; color:#000;">UNITS</th>
+                                                <th style="border-right:1px solid #000; padding:2px 4px; text-align:right;  font-weight:bold; color:#000;">EARNINGS</th>
+                                                <th style="border-right:1px solid #000; padding:2px 4px; text-align:right;  font-weight:bold; color:#000;">DEDUCTIONS</th>
+                                                <th style="border-right:1px solid #000; padding:2px 4px; text-align:right;  font-weight:bold; color:#000;">YTD AMOUNT</th>
+                                                <th style="padding:2px 4px; text-align:right; font-weight:bold; color:#000;">CO. CONTRI</th>
+                                            </tr>
+                                        </thead>
+
+                                        <tbody>
+                                            <!-- Total hours from worked days -->
+                                            <t t-set="total_hours" t-value="sum(o.worked_days_line_ids.mapped('number_of_hours'))"/>
+                                            <!-- Codes to HIDE from payslip display -->
+                                            <t t-set="hidden_codes" t-value="['GROSS', 'NET', 'TAX_CREDIT', 'TAXABLE']"/>
+
+                                            <t t-foreach="o.line_ids.filtered(lambda l: l.salary_rule_id.appears_on_payslip and l.code not in hidden_codes and l.total != 0)" t-as="line">
+                                                <t t-set="is_earning"   t-value="line.category_id.code in ('BASIC', 'ALW')"/>
+                                                <t t-set="is_deduction" t-value="line.category_id.code == 'DED'"/>
+                                                <t t-set="is_co_contr"  t-value="line.category_id.code == 'COMP'"/>
+                                                <t t-set="ytd_raw"      t-value="o.get_ytd_amount(line.code)"/>
+
+                                                <tr>
+                                                    <!-- Description -->
+                                                    <td style="border-right:1px solid #000; border-bottom:1px solid #000; padding:2px 4px; text-align:left; color:#000;">
+                                                        <t t-esc="line.name"/>
+                                                    </td>
+                                                    <!-- Units: hours for BASIC row only -->
+                                                    <td style="border-right:1px solid #000; border-bottom:1px solid #000; padding:2px 4px; text-align:center; color:#000;">
+                                                        <t t-if="line.code == 'BASIC' and total_hours &gt; 0">
+                                                            <t t-esc="'%.2f' % total_hours"/>
+                                                        </t>
+                                                    </td>
+                                                    <!-- Earnings -->
+                                                    <td style="border-right:1px solid #000; border-bottom:1px solid #000; padding:2px 4px; text-align:right; color:#000;">
+                                                        <t t-if="is_earning">
+                                                            <t t-esc="'%.2f' % line.total"/>
+                                                            <t t-if="o.hao_allow_multi_payroll_currency and line.code == 'BASIC' and o.hao_secondary_basic_wage">
+                                                                <br/><small style="color:#444; font-size:7pt;"><t t-esc="o.hao_secondary_payroll_currency_id.symbol or ''"/> <t t-esc="'%.2f' % o.hao_secondary_basic_wage"/></small>
+                                                            </t>
+                                                        </t>
+                                                    </td>
+                                                    <!-- Deductions (show as NEGATIVE) -->
+                                                    <td style="border-right:1px solid #000; border-bottom:1px solid #000; padding:2px 4px; text-align:right; color:#000;">
+                                                        <t t-if="is_deduction">
+                                                            <t t-esc="'-%.2f' % abs(line.total)"/>
+                                                        </t>
+                                                    </td>
+                                                    <!-- YTD Amount -->
+                                                    <td style="border-right:1px solid #000; border-bottom:1px solid #000; padding:2px 4px; text-align:right; color:#000;">
+                                                        <t t-if="ytd_raw != 0">
+                                                            <t t-esc="'-%.2f' % abs(ytd_raw) if ytd_raw &lt; 0 else '%.2f' % ytd_raw"/>
+                                                        </t>
+                                                    </td>
+                                                    <!-- Company Contribution -->
+                                                    <td style="border-bottom:1px solid #000; padding:2px 4px; text-align:right; color:#000;">
+                                                        <t t-if="is_co_contr">
+                                                            <t t-esc="'%.2f' % line.total"/>
+                                                        </t>
+                                                    </td>
+                                                </tr>
+                                            </t>
+
+                                            <!-- Net Paid row (explicit, always last) -->
+                                            <t t-set="net_line"   t-value="o.line_ids.filtered(lambda l: l.code == 'NET')"/>
+                                            <t t-set="net_paid"   t-value="net_line[0].total if net_line else 0.0"/>
+                                            <t t-set="net_ytd"    t-value="o.get_ytd_amount('NET')"/>
+                                            <tr>
+                                                <td style="border-right:1px solid #000; border-bottom:1px solid #000; padding:2px 4px; font-weight:bold; color:#000;">Net Paid</td>
+                                                <td style="border-right:1px solid #000; border-bottom:1px solid #000; padding:2px 4px; color:#000;"></td>
+                                                <td style="border-right:1px solid #000; border-bottom:1px solid #000; padding:2px 4px; color:#000;"></td>
+                                                <td style="border-right:1px solid #000; border-bottom:1px solid #000; padding:2px 4px; color:#000;"></td>
+                                                <td style="border-right:1px solid #000; border-bottom:1px solid #000; padding:2px 4px; text-align:right; font-weight:bold; color:#000;">
+                                                    <t t-esc="'%.2f' % net_ytd"/>
+                                                </td>
+                                                <td style="border-bottom:1px solid #000; padding:2px 4px; color:#000;"></td>
+                                            </tr>
+                                        </tbody>
+
+                                        <!-- TOTALS FOOTER -->
+                                        <t t-set="tot_earn" t-value="sum(o.line_ids.filtered(lambda l: l.category_id.code in ('BASIC','ALW')).mapped('total'))"/>
+                                        <t t-set="tot_ded"  t-value="sum(o.line_ids.filtered(lambda l: l.category_id.code == 'DED').mapped('total'))"/>
+                                        <t t-set="tot_co"   t-value="sum(o.line_ids.filtered(lambda l: l.category_id.code == 'COMP').mapped('total'))"/>
+                                        <t t-set="net_val"  t-value="net_line[0].total if net_line else 0.0"/>
+
+                                        <tfoot>
+                                            <tr style="background-color: #e0e0e0;">
+                                                <td style="border-right:1px solid #000; padding:2px 4px; font-weight:bold; color:#000;">TOTALS :</td>
+                                                <td style="border-right:1px solid #000; padding:2px 4px; text-align:center; font-weight:bold; color:#000;">
+                                                    <t t-if="total_hours &gt; 0"><t t-esc="'%.2f' % total_hours"/></t>
+                                                </td>
+                                                <td style="border-right:1px solid #000; padding:2px 4px; text-align:right; font-weight:bold; color:#000;">
+                                                    <t t-esc="'%.2f' % tot_earn"/>
+                                                </td>
+                                                <td style="border-right:1px solid #000; padding:2px 4px; text-align:right; font-weight:bold; color:#000;">
+                                                    <t t-esc="'-%.2f' % abs(tot_ded) if tot_ded != 0 else '0.00'"/>
+                                                </td>
+                                                <td style="border-right:1px solid #000; padding:2px 4px; text-align:right; font-weight:bold; color:#000;">
+                                                    <t t-esc="'%.2f' % net_val"/>
+                                                </td>
+                                                <td style="padding:2px 4px; text-align:right; font-weight:bold; color:#000;">
+                                                    <t t-esc="'%.2f' % tot_co"/>
+                                                </td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </td>
+                            </tr>
+                        </table>
+                    </t>
+                </div>
+            </t>
+        </template>
+    </data>
+</odoo>

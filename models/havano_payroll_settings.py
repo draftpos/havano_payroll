@@ -13,6 +13,21 @@ class ResConfigSettings(models.TransientModel):
         related='company_id.hao_exchange_rate',
         readonly=False
     )
+    payslip_format = fields.Selection(
+        related='company_id.payslip_format',
+        readonly=False
+    )
+
+    # ==================== FDS SETTINGS ====================
+    tax_calculation_method = fields.Selection(
+        related='company_id.tax_calculation_method',
+        readonly=False
+    )
+    fds_method = fields.Selection(
+        related='company_id.fds_method',
+        readonly=False
+    )
+
 
     havano_tax_credit_blind = fields.Float(
         string='Blind Person Tax Credit Amount',

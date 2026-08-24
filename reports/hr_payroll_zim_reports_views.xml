@@ -174,5 +174,6 @@
     <menuitem id="menu_havano_nssa_employer_report" name="NSSA Report Employer" parent="menu_hr_payroll_report_zim" action="action_wizard_nssa_employer_report" sequence="30"/>
     <menuitem id="menu_havano_payroll_summary" name="Payroll Summary Report" parent="menu_hr_payroll_report_zim" action="action_wizard_payroll_summary" sequence="40"/>
     <menuitem id="menu_havano_salary_registry" name="Salary Registry Report" parent="menu_hr_payroll_report_zim" action="action_wizard_salary_registry" sequence="50"/>
+    <menuitem id="menu_havano_zimra_p2" name="ZIMRA P2 Report" parent="menu_hr_payroll_report_zim" action="action_wizard_zimra_p2" sequence="60"/>
 
 </odoo>
