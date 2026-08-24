@@ -11,6 +11,24 @@
 
                 <block title="Havano Payroll" id="havano_payroll_settings">
 
+                    <!-- PAYE Calculation Method -->
+                    <setting string="PAYE Calculation Method" help="Choose how PAYE tax is calculated. Non-FDS calculates each period independently. FDS (Final Deduction System) calculates cumulatively over the tax year (Jan-Dec) to ensure the correct total tax is withheld, as required by ZIMRA.">
+                        <div class="content-group mt16">
+                            <label for="tax_calculation_method" class="o_light_label"/>
+                            <field name="tax_calculation_method" widget="radio"/>
+                        </div>
+                        <div class="content-group mt8" invisible="tax_calculation_method != 'fds'">
+                            <label for="fds_method" class="o_light_label"/>
+                            <field name="fds_method"/>
+                        </div>
+                    </setting>
+
+                    <setting string="Payslip Formatting" help="Configure the default payslip layout format.">
+                        <div class="content-group mt16">
+                            <label for="payslip_format" class="o_light_label"/>
+                            <field name="payslip_format"/>
+                        </div>
+                    </setting>
 
                     <!-- Fixed Tax Credits -->
                     <setting string="Fixed Tax Credits" help="Configure fixed tax credits for specific groups.">

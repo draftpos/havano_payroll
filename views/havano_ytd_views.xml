@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============================================================
+         YTD BALANCES - Tree (Editable List) View
+         Allows payroll managers to view and edit all employee
+         YTD opening balances in one place (like product lines).
+         ============================================================ -->
+    <record id="view_havano_employee_ytd_tree" model="ir.ui.view">
+        <field name="name">havano.employee.ytd.tree</field>
+        <field name="model">havano.employee.ytd</field>
+        <field name="arch" type="xml">
+            <list string="YTD Opening Balances" editable="bottom"
+                  decoration-warning="ytd_opening_months_worked > 0"
+                  decoration-info="ytd_opening_months_worked == 0">
+                <field name="employee_id" readonly="1" width="180"/>
+                <field name="department_id" readonly="1" optional="show"/>
+                <field name="job_id" readonly="1" optional="show"/>
+                <field name="tax_year" readonly="1"/>
+                <field name="currency_id" invisible="1"/>
+                <field name="ytd_basic_salary" widget="monetary" options="{'currency_field': 'currency_id'}" sum="Total Basic"/>
+                <field name="ytd_opening_taxable_income" widget="monetary" options="{'currency_field': 'currency_id'}" sum="Total Taxable Income"/>
+                <field name="ytd_opening_paye_paid" widget="monetary" options="{'currency_field': 'currency_id'}" sum="Total PAYE Paid"/>
+                <field name="ytd_opening_months_worked"/>
+                <field name="notes" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View (for individual record editing) -->
+    <record id="view_havano_employee_ytd_form" model="ir.ui.view">
+        <field name="name">havano.employee.ytd.form</field>
+        <field name="model">havano.employee.ytd</field>
+        <field name="arch" type="xml">
+            <form string="YTD Opening Balance">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="employee_id" readonly="1"/>
+                        </h1>
+                        <h3 class="text-muted">Tax Year <field name="tax_year" readonly="1" nolabel="1"/></h3>
+                    </div>
+                    <group>
+                        <group string="Employee Info">
+                            <field name="employee_id" readonly="1"/>
+                            <field name="department_id" readonly="1"/>
+                            <field name="job_id" readonly="1"/>
+                            <field name="company_id" readonly="1"/>
+                            <field name="tax_year" readonly="1"/>
+                        </group>
+                        <group string="Previous Employer Balances (P6 Form)">
+                            <field name="currency_id" invisible="1"/>
+                            <field name="ytd_basic_salary" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                            <field name="ytd_opening_taxable_income" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                            <field name="ytd_opening_paye_paid" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                            <field name="ytd_opening_months_worked"/>
+                            <field name="notes"/>
+                        </group>
+                    </group>
+                    <div class="alert alert-info" role="alert">
+                        <strong>How to use:</strong> Enter the figures from the employee's P6 form issued by their previous employer.
+                        Leave all fields at 0 if this employee has been with your company since January 1st.
+                        These values are added to the cumulative FDS calculations for PAYE.
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+
+
+    <!-- Action for YTD Balances -->
+    <record id="action_havano_employee_ytd" model="ir.actions.act_window">
+        <field name="name">FDS YTD Balances</field>
+        <field name="res_model">havano.employee.ytd</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_ids" eval="[(5, 0, 0), (0, 0, {'view_mode': 'list', 'view_id': ref('view_havano_employee_ytd_tree')}), (0, 0, {'view_mode': 'form', 'view_id': ref('view_havano_employee_ytd_form')})]"/>
+        <field name="context">{}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No YTD balance records yet!
+            </p>
+            <p>
+                Add YTD opening balances for employees who joined mid-year from another employer.
+                Enter their P6 form details so that FDS PAYE calculations are accurate for the full tax year.
+            </p>
+        </field>
+    </record>
+
+    <!-- Server Action: auto-creates YTD rows for all employees then opens list -->
+    <record id="action_server_ytd_balances" model="ir.actions.server">
+        <field name="name">Open FDS YTD Balances</field>
+        <field name="model_id" ref="havano_payroll.model_havano_employee_ytd"/>
+        <field name="state">code</field>
+        <field name="code">action = model.action_open_ytd_balances()</field>
+    </record>
+
+    <!-- Menu Item under Payroll > Configuration -->
+    <menuitem id="menu_havano_employee_ytd"
+              name="FDS YTD Balances"
+              parent="hr_work_entry_enterprise.menu_hr_payroll_configuration"
+              action="action_server_ytd_balances"
+              sequence="90"
+              groups="hr_payroll.group_hr_payroll_user"/>
+
+</odoo>

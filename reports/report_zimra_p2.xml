@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_report_zimra_p2" model="ir.actions.report">
+        <field name="name">ZIMRA P2 Report</field>
+        <field name="model">havano.zim.report.wizard</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">havano_payroll.report_zimra_p2</field>
+        <field name="report_file">havano_payroll.report_zimra_p2</field>
+        <field name="paperformat_id" ref="havano_payroll.paperformat_havano_payslip"/>
+        <field name="binding_model_id" ref="model_havano_zim_report_wizard"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <template id="report_zimra_p2">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-set="company" t-value="o.payslip_run_id.company_id.sudo()"/>
+                <t t-call="web.basic_layout">
+                    <div class="page" style="font-family: Arial, sans-serif; font-size: 14px; color: #000;">
+                        <!-- Header -->
+                        <div style="text-align: center; margin-bottom: 20px;">
+                            <img t-if="company.logo" t-att-src="image_data_uri(company.logo)" style="max-height: 80px; float: right;" alt="Logo"/>
+                            <h2 style="font-weight: bold; margin: 0; text-transform: uppercase;">ZIMBABWE REVENUE AUTHORITY</h2>
+                            <p style="font-weight: bold; margin: 5px 0;">Return for the Remittance of P.A.Y.E.</p>
+                            <p style="font-weight: bold; margin: 0; float: right; clear: right;">FORM P2</p>
+                        </div>
+                        
+                        <div style="margin-bottom: 20px;">
+                            <table style="width: 50%;">
+                                <tr>
+                                    <td>REGION: .......................................</td>
+                                </tr>
+                                <tr>
+                                    <td>STATION: .......................................</td>
+                                </tr>
+                            </table>
+                            <div style="float: right; margin-top: -30px; text-decoration: underline;">Attachments</div>
+                        </div>
+
+                        <!-- Part A -->
+                        <div style="font-weight: bold; margin-bottom: 5px;">Part A</div>
+                        <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px; border: 1px solid black;">
+                            <tr>
+                                <td style="border: 1px solid black; padding: 5px; width: 40%;">1. Employer's Name</td>
+                                <td style="border: 1px solid black; padding: 5px;"><span t-field="company.name"/></td>
+                            </tr>
+                            <tr>
+                                <td style="border: 1px solid black; padding: 5px;">2. Trade Name</td>
+                                <td style="border: 1px solid black; padding: 5px;"><span t-field="company.name"/></td>
+                            </tr>
+                            <tr>
+                                <td style="border: 1px solid black; padding: 5px;">3. Business Partner Number</td>
+                                <td style="border: 1px solid black; padding: 5px;"><span t-field="company.company_registry"/></td>
+                            </tr>
+                            <tr>
+                                <td style="border: 1px solid black; padding: 5px;">4. Physical Address</td>
+                                <td style="border: 1px solid black; padding: 5px;">
+                                    <t t-if="company.street"><span t-field="company.street"/> </t>
+                                    <t t-if="company.street2"><span t-field="company.street2"/> </t>
+                                    <t t-if="company.city"><span t-field="company.city"/> </t>
+                                    <t t-if="company.country_id"><span t-field="company.country_id.name"/></t>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="border: 1px solid black; padding: 5px;">5. Postal Address</td>
+                                <td style="border: 1px solid black; padding: 5px;">
+                                    <t t-if="company.street"><span t-field="company.street"/> </t>
+                                    <t t-if="company.street2"><span t-field="company.street2"/> </t>
+                                    <t t-if="company.city"><span t-field="company.city"/> </t>
+                                    <t t-if="company.country_id"><span t-field="company.country_id.name"/></t>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="border: 1px solid black; padding: 5px;">6. Tax Period</td>
+                                <td style="border: 1px solid black; padding: 5px;"><span t-esc="tax_period"/></td>
+                            </tr>
+                            <tr>
+                                <td style="border: 1px solid black; padding: 5px;">7. Due date</td>
+                                <td style="border: 1px solid black; padding: 5px;"><span t-esc="due_date"/></td>
+                            </tr>
+                            <tr>
+                                <td style="border: 1px solid black; padding: 5px;">8. E-mail Address</td>
+                                <td style="border: 1px solid black; padding: 5px;"><span t-field="company.email"/></td>
+                            </tr>
+                            <tr>
+                                <td style="border: 1px solid black; padding: 5px;">9. Telephone</td>
+                                <td style="border: 1px solid black; padding: 5px;"><span t-field="company.phone"/></td>
+                            </tr>
+                        </table>
+
+                        <!-- Part B -->
+                        <div style="font-weight: bold; margin-bottom: 5px;">Part B</div>
+                        <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px; border: 1px solid black;">
+                            <tr>
+                                <td style="border: 1px solid black; padding: 5px; width: 60%;">1. Total Remuneration</td>
+                                <td style="border: 1px solid black; padding: 5px; text-align: right;"><span t-esc="total_remuneration" t-options='{"widget": "monetary", "display_currency": company.currency_id}'/></td>
+                            </tr>
+                            <tr>
+                                <td style="border: 1px solid black; padding: 5px;">2. Number of Employees (including contract employees)</td>
+                                <td style="border: 1px solid black; padding: 5px; text-align: right;"><span t-esc="number_of_employees"/></td>
+                            </tr>
+                            <tr>
+                                <td style="border: 1px solid black; padding: 5px;">3. Gross PAYE</td>
+                                <td style="border: 1px solid black; padding: 5px; text-align: right;"><span t-esc="gross_paye" t-options='{"widget": "monetary", "display_currency": company.currency_id}'/></td>
+                            </tr>
+                            <tr>
+                                <td style="border: 1px solid black; padding: 5px;">4. AIDS Levy @ 3%</td>
+                                <td style="border: 1px solid black; padding: 5px; text-align: right;"><span t-esc="aids_levy" t-options='{"widget": "monetary", "display_currency": company.currency_id}'/></td>
+                            </tr>
+                            <tr>
+                                <td style="border: 1px solid black; padding: 5px;">5. Total Tax Due</td>
+                                <td style="border: 1px solid black; padding: 5px; text-align: right;"><span t-esc="total_tax_due" t-options='{"widget": "monetary", "display_currency": company.currency_id}'/></td>
+                            </tr>
+                        </table>
+
+                        <!-- Declaration -->
+                        <div style="margin-bottom: 40px;">
+                            <p>I declare that the information I have given on this form is complete and correct.</p>
+                        </div>
+                        
+                        <table style="width: 100%; margin-bottom: 20px;">
+                            <tr>
+                                <td style="width: 33%; border-top: 1px dotted black; padding-top: 5px; text-align: center;">Name</td>
+                                <td style="width: 33%; border-top: 1px dotted black; padding-top: 5px; text-align: center; margin-left: 10px; margin-right: 10px;">Designation</td>
+                                <td style="width: 33%; border-top: 1px dotted black; padding-top: 5px; text-align: center;">Signature</td>
+                            </tr>
+                        </table>
+                        
+                        <table style="width: 100%;">
+                            <tr>
+                                <td style="width: 33%; border-top: 1px dotted black; padding-top: 5px; text-align: center;">Date</td>
+                            </tr>
+                        </table>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

@@ -41,3 +41,26 @@ class HrVersion(models.Model):
         tracking=True,
         help="Monthly Funeral Policy deduction amount."
     )
+
+    # ==================== FDS YTD Opening Balances ====================
+    # Used for mid-year hires to carry forward data from a previous employer's P6 form.
+    # These amounts are included in cumulative FDS calculations alongside payslips in Odoo.
+    ytd_opening_taxable_income = fields.Float(
+        string='YTD Opening Taxable Income',
+        default=0.0,
+        help='[FDS] Total taxable income earned at the PREVIOUS employer this tax year (Jan-Dec). '
+             'Enter from the employee\'s P6 form. Leave 0 if this employee started the tax year with this company.'
+    )
+    ytd_opening_paye_paid = fields.Float(
+        string='YTD Opening PAYE Paid',
+        default=0.0,
+        help='[FDS] Total PAYE already deducted by the PREVIOUS employer this tax year (Jan-Dec). '
+             'Enter from the employee\'s P6 form. Leave 0 if this employee started the tax year with this company.'
+    )
+    ytd_opening_months_worked = fields.Integer(
+        string='YTD Opening Months Worked',
+        default=0,
+        help='[FDS] Number of months worked at the PREVIOUS employer this tax year (Jan-Dec). '
+             'Enter from the employee\'s P6 form. Leave 0 if this employee started the tax year with this company.'
+    )
+

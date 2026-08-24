@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Router template replacing standard payslip template -->
+        <template id="report_payslip_router" inherit_id="hr_payroll.report_payslip_lang">
+            <xpath expr="//t[@t-call='web.html_container']" position="replace">
+                <!-- Check the first document's company (assuming all docs are for same company) -->
+                <t t-set="payslip_format" t-value="docs and docs[0].company_id.payslip_format or 'standard'"/>
+                
+                <t t-if="payslip_format == 'landscape_3_per_page'">
+                    <t t-call="havano_payroll.report_payslip_bellina"/>
+                </t>
+                <t t-else="">
+                    <!-- Fallback to original Odoo standard template contents -->
+                    <t t-call="web.html_container">
+                        <t t-foreach="docs" t-as="o">
+                            <t t-set="o" t-value="o.with_context(lang=o.employee_id.sudo().address_id.lang or o.env.lang)"/>
+                            <t t-call="hr_payroll.report_payslip" t-lang="o.env.lang"/>
+                        </t>
+                    </t>
+                </t>
+            </xpath>
+        </template>
+    </data>
+</odoo>

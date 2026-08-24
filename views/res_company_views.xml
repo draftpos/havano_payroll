@@ -18,9 +18,32 @@
                                    invisible="not hao_allow_multi_payroll_currency"
                                    required="hao_allow_multi_payroll_currency"/>
                         </group>
+                        <group string="Payslip Settings">
+                            <field name="payslip_format"/>
+                        </group>
+                    </group>
+                    <group string="PAYE Tax Calculation Method">
+                        <group>
+                            <field name="tax_calculation_method" widget="radio"/>
+                            <field name="fds_method"
+                                   string="FDS Method"
+                                   invisible="tax_calculation_method != 'fds'"/>
+                        </group>
+                        <group>
+                            <div invisible="tax_calculation_method != 'fds'" class="alert alert-info" role="alert">
+                                <strong>FDS Active:</strong> PAYE will be calculated cumulatively across the tax year (January–December)
+                                using the selected FDS method. Ensure the ZIMRA Annual Tax Table is configured.
+                                For mid-year hires, enter their YTD balances from the previous employer's P6 form on the employee's Contract.
+                            </div>
+                            <div invisible="tax_calculation_method != 'non_fds'" class="alert alert-warning" role="alert">
+                                <strong>Non-FDS Active:</strong> PAYE is calculated independently for each pay period
+                                using the standard ZIMRA period tax tables. This is the default (non-cumulative) method.
+                            </div>
+                        </group>
                     </group>
                 </page>
             </xpath>
         </field>
     </record>
 </odoo>
+

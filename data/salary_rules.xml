@@ -5,7 +5,6 @@
         <record id="structure_havano_base" model="hr.payroll.structure">
             <field name="name">Havano Base Structure</field>
             <field name="type_id" ref="hr.structure_type_employee"/>
-            <field name="country_id" ref="base.zw"/>
         </record>
 
         <record id="rule_basic_salary" model="hr.salary.rule">
@@ -52,47 +51,163 @@ result = - (base_nssa * (pct / 100.0))
             <field name="struct_id" ref="structure_havano_base"/>
             <field name="amount_select">code</field>
             <field name="amount_python_compute">
+# ============================================================
+# HAVANO PAYROLL - PAYE CALCULATION
+# Supports three modes set in Company Settings > Havano Payroll:
+#   1. Non-FDS  : Standard period-by-period calculation (default)
+#   2. FDS Averaging   : ZIMRA FDS Averaging Method
+#   3. FDS Forecasting : ZIMRA FDS Forecasting Method
+# Tax year: January 1 – December 31 (ZIMRA calendar year)
+# ============================================================
+
 gross = categories['GROSS'] if 'GROSS' in categories else 0.0
 nssa_deduction = abs(result_rules['NSSA']['total']) if 'NSSA' in result_rules else 0.0
-taxable_income = gross - nssa_deduction
+taxable_income_this_period = max(gross - nssa_deduction, 0.0)
 
-if taxable_income &lt;= 0:
-    result = 0.0
-else:
-    # 1. Map Odoo Frequency to ZIMRA Frequency
-    contract_freq = payslip.version_id.schedule_pay if payslip.version_id else 'monthly'
-    freq_map = {
-        'daily': 'daily',
-        'weekly': 'weekly',
-        'bi-weekly': 'fortnightly',
-        'monthly': 'monthly',
-        'annually': 'yearly',
-        'yearly': 'yearly',
-    }
-    zimra_freq = freq_map.get(contract_freq, 'monthly')
-    
-    # 2. Get Currency (Using company currency as base, or employee's specific currency if available)
-    currency_id = payslip.company_id.currency_id.id
-    
-    # 3. Fetch matching active bracket
-    domain = [
+tax_calculation_method = payslip.company_id.tax_calculation_method or 'non_fds'
+fds_method = payslip.company_id.fds_method or 'averaging'
+currency_id = payslip.company_id.currency_id.id
+
+def _get_annual_paye(annual_income):
+    """Calculate annual PAYE from annual taxable income using the YEARLY tax brackets."""
+    annual_brackets = payslip.env['zimra.tax.table'].search([
         ('currency_id', '=', currency_id),
-        ('frequency', '=', zimra_freq),
-        ('active', '=', True)
-    ]
-    brackets = payslip.env['zimra.tax.table'].search(domain, order='min_income asc')
-    
-    paye_amount = 0.0
-    for bracket in brackets:
-        if taxable_income &gt;= bracket.min_income and (bracket.max_income == 0 or taxable_income &lt;= bracket.max_income):
-            paye_amount = (taxable_income * bracket.rate / 100.0) - bracket.deduction
-            break
-            
-    # Apply Tax Credit
-    tax_credit = result_rules['TAX_CREDIT']['total'] if 'TAX_CREDIT' in result_rules else 0.0
-    paye_amount = paye_amount - tax_credit
-            
-    result = -max(paye_amount, 0.0)
+        ('frequency', '=', 'yearly'),
+        ('active', '=', True),
+    ], order='min_income asc')
+    if not annual_brackets:
+        # Fallback: annualise monthly brackets if no annual table exists
+        annual_brackets = payslip.env['zimra.tax.table'].search([
+            ('currency_id', '=', currency_id),
+            ('frequency', '=', 'monthly'),
+            ('active', '=', True),
+        ], order='min_income asc')
+        for bracket in annual_brackets:
+            if annual_income &gt;= (bracket.min_income * 12) and (bracket.max_income == 0 or annual_income &lt;= (bracket.max_income * 12)):
+                return max((annual_income * bracket.rate / 100.0) - (bracket.deduction * 12), 0.0)
+        return 0.0
+    for bracket in annual_brackets:
+        if annual_income &gt;= bracket.min_income and (bracket.max_income == 0 or annual_income &lt;= bracket.max_income):
+            return max((annual_income * bracket.rate / 100.0) - bracket.deduction, 0.0)
+    return 0.0
+
+# ------------------------------------------------------------------
+# METHOD 1: NON-FDS (Standard Period-by-Period)
+# ------------------------------------------------------------------
+if tax_calculation_method == 'non_fds':
+    if taxable_income_this_period &lt;= 0:
+        result = 0.0
+    else:
+        contract_freq = payslip.version_id.schedule_pay if payslip.version_id else 'monthly'
+        freq_map = {
+            'daily': 'daily',
+            'weekly': 'weekly',
+            'bi-weekly': 'fortnightly',
+            'monthly': 'monthly',
+            'annually': 'yearly',
+            'yearly': 'yearly',
+        }
+        zimra_freq = freq_map.get(contract_freq, 'monthly')
+        domain = [
+            ('currency_id', '=', currency_id),
+            ('frequency', '=', zimra_freq),
+            ('active', '=', True)
+        ]
+        brackets = payslip.env['zimra.tax.table'].search(domain, order='min_income asc')
+        paye_amount = 0.0
+        for bracket in brackets:
+            if taxable_income_this_period &gt;= bracket.min_income and (bracket.max_income == 0 or taxable_income_this_period &lt;= bracket.max_income):
+                paye_amount = (taxable_income_this_period * bracket.rate / 100.0) - bracket.deduction
+                break
+        tax_credit = result_rules['TAX_CREDIT']['total'] if 'TAX_CREDIT' in result_rules else 0.0
+        paye_amount = paye_amount - tax_credit
+        result = -max(paye_amount, 0.0)
+
+# ------------------------------------------------------------------
+# METHOD 2: FDS AVERAGING METHOD
+# ------------------------------------------------------------------
+# Steps (per ZIMRA FDS Guide):
+#   a. Total taxable earnings to date (incl. this period)
+#   b. Divide by months worked to get average monthly earnings
+#   c. Multiply by 12 to get annualised income
+#   d. Calculate annual PAYE on annualised income
+#   e. Divide annual PAYE by 12 to get average monthly PAYE
+#   f. Multiply by months worked to get cumulative PAYE to date
+#   g. Apply cumulative tax credits to date
+#   h. Subtract PAYE already paid in previous periods → current period deduction
+# ------------------------------------------------------------------
+elif tax_calculation_method == 'fds' and fds_method == 'averaging':
+    ytd_taxable_before = payslip.fds_get_ytd_taxable_income()
+    ytd_paye_before = payslip.fds_get_ytd_paye_paid()
+    months_worked = payslip.fds_get_months_worked_in_year()
+
+    ytd_taxable_total = ytd_taxable_before + taxable_income_this_period
+
+    if ytd_taxable_total &lt;= 0 or months_worked &lt;= 0:
+        result = 0.0
+    else:
+        avg_monthly_income = ytd_taxable_total / months_worked
+        annualised_income = avg_monthly_income * 12
+
+        annual_paye_gross = _get_annual_paye(annualised_income)
+        avg_monthly_paye = annual_paye_gross / 12.0
+        cumulative_paye_due = avg_monthly_paye * months_worked
+
+        # Apply cumulative tax credits (credits for ALL months worked this year)
+        tax_credit_this_period = result_rules['TAX_CREDIT']['total'] if 'TAX_CREDIT' in result_rules else 0.0
+        cumulative_credits = tax_credit_this_period * months_worked
+
+        cumulative_paye_after_credits = max(cumulative_paye_due - cumulative_credits, 0.0)
+
+        # PAYE for this period = cumulative due - already paid
+        paye_this_period = cumulative_paye_after_credits - ytd_paye_before
+        result = -max(paye_this_period, 0.0)
+
+# ------------------------------------------------------------------
+# METHOD 3: FDS FORECASTING METHOD
+# ------------------------------------------------------------------
+# Steps (per ZIMRA FDS Guide):
+#   a. Total taxable earnings to date (incl. this period)
+#   b. Forecast remaining earnings = taxable_income_this_period * months_remaining
+#   c. Forecasted annual income = earnings to date + forecasted remaining
+#   d. Calculate annual PAYE on forecasted annual income
+#   e. Apply annual tax credits
+#   f. Remaining tax = annual PAYE after credits - PAYE paid to date
+#   g. Divide remaining tax by months remaining (incl. this month) → current period deduction
+# ------------------------------------------------------------------
+elif tax_calculation_method == 'fds' and fds_method == 'forecasting':
+    ytd_taxable_before = payslip.fds_get_ytd_taxable_income()
+    ytd_paye_before = payslip.fds_get_ytd_paye_paid()
+    months_worked = payslip.fds_get_months_worked_in_year()
+
+    ytd_taxable_total = ytd_taxable_before + taxable_income_this_period
+
+    current_month = payslip.date_to.month if payslip.date_to else 12
+    months_remaining_in_year = 13 - current_month  # includes current month
+
+    if ytd_taxable_total &lt;= 0:
+        result = 0.0
+    else:
+        forecasted_remaining_income = taxable_income_this_period * (months_remaining_in_year - 1)
+        forecasted_annual_income = ytd_taxable_total + forecasted_remaining_income
+
+        annual_paye_gross = _get_annual_paye(forecasted_annual_income)
+
+        # Apply annual cumulative tax credits (12 months worth of credits)
+        tax_credit_this_period = result_rules['TAX_CREDIT']['total'] if 'TAX_CREDIT' in result_rules else 0.0
+        annual_credits = tax_credit_this_period * 12
+
+        annual_paye_after_credits = max(annual_paye_gross - annual_credits, 0.0)
+
+        # Remaining tax balance after subtracting what's already been paid
+        remaining_tax = annual_paye_after_credits - ytd_paye_before
+
+        # Spread remaining tax equally over months remaining (incl. current month)
+        paye_this_period = remaining_tax / months_remaining_in_year if months_remaining_in_year &gt; 0 else 0.0
+        result = -max(paye_this_period, 0.0)
+
+else:
+    result = 0.0
             </field>
         </record>
 
@@ -104,12 +219,15 @@ else:
             <field name="struct_id" ref="structure_havano_base"/>
             <field name="amount_select">code</field>
             <field name="amount_python_compute">
+# AIDS Levy is always 3% of the PAYE calculated for this period (regardless of FDS method).
+# The PAYE rule already handles all FDS/Non-FDS logic and produces the correct period PAYE.
 paye = abs(result_rules['PAYE']['total']) if 'PAYE' in result_rules else 0.0
 rule_record = payslip.env['hr.salary.rule'].search([('code', '=', 'AIDS')], limit=1)
 pct = rule_record.hao_aids_levy_pct if rule_record else 3.0
 result = - (paye * (pct / 100.0))
             </field>
         </record>
+
 
         <!-- NSSA Company Contribution -->
         <record id="rule_nssa_comp" model="hr.salary.rule">

@@ -90,6 +90,128 @@ class HrPayslip(models.Model):
         for slip in self:
             slip.hao_has_secondary_wage = bool(slip.employee_id and slip.employee_id.hao_secondary_wage > 0)
 
+    def get_ytd_amount(self, code):
+        """Return Year-To-Date total for a salary rule code for this employee.
+        Includes all payslips from Jan 1 to the end of the current payslip period
+        (including the current payslip itself, using its computed lines)."""
+        self.ensure_one()
+        if not self.date_to or not self.employee_id:
+            return 0.0
+        year_start = self.date_to.replace(month=1, day=1)
+
+        # Sum from all CONFIRMED payslips this year EXCLUDING the current one
+        lines = self.env['hr.payslip.line'].search([
+            ('employee_id', '=', self.employee_id.id),
+            ('slip_id.state', 'in', ['done', 'paid', 'validated']),
+            ('slip_id.date_to', '>=', year_start),
+            ('slip_id.date_to', '<=', self.date_to),
+            ('slip_id', '!=', self.id),
+            ('code', '=', code)
+        ])
+        ytd_historical = sum(lines.mapped('total'))
+
+        # Add current payslip's computed value for this code
+        current_line = self.line_ids.filtered(lambda l: l.code == code)
+        current_val = sum(current_line.mapped('total')) if current_line else 0.0
+
+        return ytd_historical + current_val
+
+    # ==================== FDS HELPER METHODS ====================
+    # These methods calculate cumulative Year-To-Date (YTD) totals required by the
+    # FDS Averaging and Forecasting formulas. They sum:
+    #   1. YTD Opening Balances from the employee's contract (for mid-year hires from a previous employer)
+    #   2. All CONFIRMED payslips for this employee in the current calendar year, EXCLUDING the current payslip
+    #      (so that the current slip can calculate what it still needs to deduct).
+
+    def fds_get_ytd_taxable_income(self):
+        """Return cumulative taxable income for the current employee in the current tax year,
+        BEFORE the current payslip. Includes opening balance from previous employer (P6 data)."""
+        self.ensure_one()
+        if not self.date_to or not self.employee_id:
+            return 0.0
+
+        year_start = self.date_to.replace(month=1, day=1)
+
+        # Sum GROSS - NSSA from all CONFIRMED previous payslips in this tax year
+        prev_slips = self.env['hr.payslip'].search([
+            ('employee_id', '=', self.employee_id.id),
+            ('state', 'in', ['done', 'paid', 'validated']),
+            ('date_to', '>=', year_start),
+            ('date_to', '<', self.date_from),  # EXCLUDE current payslip period
+            ('id', '!=', self.id),
+        ])
+
+        ytd_from_odoo = 0.0
+        for slip in prev_slips:
+            gross = sum(l.total for l in slip.line_ids if l.code == 'GROSS')
+            nssa = sum(abs(l.total) for l in slip.line_ids if l.code == 'NSSA')
+            ytd_from_odoo += max(gross - nssa, 0.0)
+
+        # Add opening balance from previous employer (P6 form data on the contract)
+        opening_balance = 0.0
+        if self.version_id and hasattr(self.version_id, 'ytd_opening_taxable_income'):
+            opening_balance = self.version_id.ytd_opening_taxable_income or 0.0
+
+        return opening_balance + ytd_from_odoo
+
+    def fds_get_ytd_paye_paid(self):
+        """Return cumulative PAYE paid for the current employee in the current tax year,
+        BEFORE the current payslip. Includes opening balance from previous employer (P6 data)."""
+        self.ensure_one()
+        if not self.date_to or not self.employee_id:
+            return 0.0
+
+        year_start = self.date_to.replace(month=1, day=1)
+
+        prev_slips = self.env['hr.payslip'].search([
+            ('employee_id', '=', self.employee_id.id),
+            ('state', 'in', ['done', 'paid', 'validated']),
+            ('date_to', '>=', year_start),
+            ('date_to', '<', self.date_from),
+            ('id', '!=', self.id),
+        ])
+
+        ytd_paye_from_odoo = sum(
+            abs(l.total)
+            for slip in prev_slips
+            for l in slip.line_ids
+            if l.code == 'PAYE'
+        )
+
+        opening_paye = 0.0
+        if self.version_id and hasattr(self.version_id, 'ytd_opening_paye_paid'):
+            opening_paye = self.version_id.ytd_opening_paye_paid or 0.0
+
+        return opening_paye + ytd_paye_from_odoo
+
+    def fds_get_months_worked_in_year(self):
+        """Return total number of months worked in the current tax year UP TO AND INCLUDING
+        the current payslip's month. Includes months from previous employer (P6 data)."""
+        self.ensure_one()
+        if not self.date_to or not self.employee_id:
+            return 1
+
+        year_start = self.date_to.replace(month=1, day=1)
+
+        # Count distinct months from confirmed payslips in Odoo (including current month)
+        all_slips_this_year = self.env['hr.payslip'].search([
+            ('employee_id', '=', self.employee_id.id),
+            ('state', 'in', ['done', 'paid', 'validated', 'verify', 'draft']),
+            ('date_to', '>=', year_start),
+            ('date_to', '<=', self.date_to),
+        ])
+        odoo_months = len(set(s.date_to.month for s in all_slips_this_year if s.date_to))
+        # Ensure at least 1 for the current month
+        odoo_months = max(odoo_months, 1)
+
+        opening_months = 0
+        if self.version_id and hasattr(self.version_id, 'ytd_opening_months_worked'):
+            opening_months = self.version_id.ytd_opening_months_worked or 0
+
+        return opening_months + odoo_months
+
+
+
     @api.model
     def get_view(self, view_id=None, view_type='form', **options):
         res = super().get_view(view_id, view_type, **options)
@@ -235,6 +357,18 @@ class HrPayrollEditPayslipLinesWizard(models.TransientModel):
         related='payslip_id.company_id.hao_allow_multi_payroll_currency'
     )
 
+    def action_validate_edition(self):
+        res = super().action_validate_edition()
+        for wizard in self:
+            if wizard.payslip_id:
+                slip = wizard.payslip_id
+                net_line = slip.line_ids.filtered(lambda l: l.code == 'NET')
+                if net_line:
+                    net_sec = sum(l.hao_secondary_total for l in slip.line_ids if l.category_id.code in ('BASIC', 'ALW', 'DED') and l.code != 'NET')
+                    net_line.hao_secondary_amount = net_sec
+                    net_line.hao_secondary_total = net_sec
+        return res
+
 class HrPayrollEditPayslipLine(models.TransientModel):
     _inherit = 'hr.payroll.edit.payslip.line'
 
@@ -245,8 +379,16 @@ class HrPayrollEditPayslipLine(models.TransientModel):
     )
     hao_secondary_total = fields.Monetary(
         string='Total (ZWG)',
+        compute='_compute_hao_secondary_total',
+        store=True,
+        readonly=False,
         currency_field='hao_secondary_currency_id'
     )
+
+    @api.depends('quantity', 'hao_secondary_amount', 'rate')
+    def _compute_hao_secondary_total(self):
+        for line in self:
+            line.hao_secondary_total = float(line.quantity) * line.hao_secondary_amount * line.rate / 100
     hao_is_manual_secondary = fields.Boolean()
     hao_secondary_currency_id = fields.Many2one(
         'res.currency',

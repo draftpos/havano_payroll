@@ -1,11 +1,38 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <record id="view_hr_employee_form_havano" model="ir.ui.view">
-        <field name="name">hr.employee.form.havano</field>
+    <!-- Smart Buttons: Basic Salary + Leave Balance -->
+    <record id="view_hr_employee_form_havano_smart_buttons" model="ir.ui.view">
+        <field name="name">hr.employee.form.havano.smart.buttons</field>
         <field name="model">hr.employee</field>
         <field name="inherit_id" ref="hr.view_employee_form"/>
         <field name="priority">50</field>
         <field name="arch" type="xml">
+            <!-- Smart Buttons -->
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_open_payslips" type="object"
+                        class="oe_stat_button" icon="fa-money"
+                        groups="hr_payroll.group_hr_payroll_user"
+                        invisible="not version_id">
+                    <div class="o_stat_info">
+                        <field name="hao_basic_salary" widget="monetary"
+                               options="{'currency_field': 'currency_id'}"
+                               class="o_stat_value"/>
+                        <field name="currency_id" invisible="1"/>
+                        <span class="o_stat_text">Basic Salary</span>
+                    </div>
+                </button>
+                <button class="oe_stat_button" icon="fa-umbrella-beach"
+                        groups="hr_payroll.group_hr_payroll_user"
+                        type="object" name="action_open_leave_allocations">
+                    <div class="o_stat_info">
+                        <field name="hao_annual_leave_balance" class="o_stat_value"
+                               widget="float_time"/>
+                        <span class="o_stat_text">Leave Days</span>
+                    </div>
+                </button>
+            </xpath>
+
+            <!-- Personal tab - Tax Credits -->
             <xpath expr="//group[@name='hr_family_group']" position="after">
                 <group name="tax_credits" string="Tax Credits">
                     <!-- Tax Credit Flags -->
@@ -14,10 +41,15 @@
                     <field name="is_elderly"/>
                     <field name="is_over_65" invisible="1"/>
                 </group>
+                <group name="payroll_identifiers" string="Payroll Identifiers">
+                    <field name="ssn_number"/>
+                    <field name="nec_grade_id"/>
+                </group>
             </xpath>
         </field>
     </record>
 
+    <!-- Payroll Tab - secondary wage and structure -->
     <record id="payroll_hr_employee_view_form_inherit_havano" model="ir.ui.view">
         <field name="name">payroll.hr.employee.view.form.inherit.havano</field>
         <field name="model">hr.employee</field>

@@ -347,3 +347,49 @@ class ReportPayrollSummary(models.AbstractModel):
             'tax_credit': tax_credit,
             'sec_tax_credit': sec_tax_credit,
         }
+
+class ReportZimraP2(models.AbstractModel):
+    _name = 'report.havano_payroll.report_zimra_p2'
+    _description = 'ZIMRA P2 Report'
+
+    def _get_report_values(self, docids, data=None):
+        wizard = self.env['havano.zim.report.wizard'].browse(docids)
+        run_id = wizard.payslip_run_id
+
+        domain = [('slip_id.payslip_run_id', '=', run_id.id), ('slip_id.state', 'in', ('draft', 'done', 'validated', 'paid'))]
+        lines = self.env['hr.payslip.line'].search(domain)
+
+        total_remuneration = 0.0
+        gross_paye = 0.0
+        aids_levy = 0.0
+
+        for line in lines:
+            if line.code == 'GROSS':
+                total_remuneration += line.total
+            elif line.code == 'PAYE':
+                gross_paye += abs(line.total)
+            elif line.code == 'AIDS':
+                aids_levy += abs(line.total)
+
+        employee_ids = self.env['hr.payslip'].search([
+            ('payslip_run_id', '=', run_id.id),
+            ('state', 'in', ('draft', 'done', 'validated', 'paid'))
+        ]).mapped('employee_id')
+        
+        number_of_employees = len(employee_ids)
+        total_tax_due = gross_paye + aids_levy
+
+        return {
+            'doc_ids': docids,
+            'doc_model': 'havano.zim.report.wizard',
+            'docs': wizard,
+            'company': wizard.company_id,
+            'total_remuneration': total_remuneration,
+            'number_of_employees': number_of_employees,
+            'gross_paye': gross_paye,
+            'aids_levy': aids_levy,
+            'total_tax_due': total_tax_due,
+            'tax_period': f"{run_id.date_start.strftime('%B %Y')}",
+            'due_date': "10th of the following month",
+        }
+
