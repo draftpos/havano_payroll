@@ -28,6 +28,12 @@ class ResConfigSettings(models.TransientModel):
         readonly=False
     )
 
+    # ==================== STATUTORY CONTRIBUTIONS ====================
+    hao_zimdef_percentage = fields.Float(
+        related='company_id.hao_zimdef_percentage',
+        readonly=False
+    )
+
 
     havano_tax_credit_blind = fields.Float(
         string='Blind Person Tax Credit Amount',
