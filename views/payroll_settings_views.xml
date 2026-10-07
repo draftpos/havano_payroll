@@ -36,6 +36,10 @@
                             <label for="hao_zimdef_percentage" class="o_light_label"/>
                             <field name="hao_zimdef_percentage"/>
                         </div>
+                        <div class="content-group mt8">
+                            <label for="hao_wcif_percentage" class="o_light_label"/>
+                            <field name="hao_wcif_percentage"/>
+                        </div>
                     </setting>
 
                     <!-- Fixed Tax Credits -->

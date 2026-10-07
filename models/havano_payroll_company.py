@@ -42,9 +42,14 @@ class ResCompany(models.Model):
             '- Averaging: Averages earnings to date, annualizes, calculates annual tax, then finds this period\'s share.\n'
             '- Forecasting: Projects current earnings to year-end, calculates annual tax on forecast, spreads remaining tax over remaining periods.')
 
-    # ==================== STATUTORY CONTRIBUTIONS ====================
     hao_zimdef_percentage = fields.Float(
         string='ZIMDEF Percentage (%)',
         default=1.0,
         help='Percentage of gross salary for ZIMDEF contribution.'
+    )
+
+    hao_wcif_percentage = fields.Float(
+        string='WCIF Percentage (%)',
+        default=1.25,
+        help='Percentage of basic salary for WCIF contribution.'
     )
