@@ -64,3 +64,17 @@ class HrVersion(models.Model):
              'Enter from the employee\'s P6 form. Leave 0 if this employee started the tax year with this company.'
     )
 
+    hao_dual_currency_mode = fields.Selection([
+        ('fixed', 'Fixed Amounts (Scenario 1)'),
+        ('percentage', 'Pegged Percentage (Scenario 2)'),
+        ('full_conversion', '100% Conversion (Scenario 3)')
+    ], string='Dual Currency Mode', default='fixed',
+       help='Scenario 1: Fixed USD and Fixed ZWG (uses Employee Secondary Wage).\n'
+            'Scenario 2: Pegged in USD, paid partially in ZWG at exchange rate.\n'
+            'Scenario 3: Pegged in USD, paid fully in ZWG at exchange rate.')
+    
+    hao_secondary_wage_percentage = fields.Float(
+        string='Secondary Wage Percentage (%)',
+        default=50.0,
+        help='Percentage of the basic salary to be paid in the secondary currency (for Scenario 2).'
+    )

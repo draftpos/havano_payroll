@@ -334,6 +334,18 @@ class HrPayslip(models.Model):
                 if is_base_only and line.hao_secondary_total != 0.0:
                     line.hao_secondary_amount = 0.0
                     line.hao_secondary_total = 0.0
+                    
+                if not is_secondary_only and not is_base_only:
+                    mode = getattr(slip.version_id, 'hao_dual_currency_mode', 'fixed')
+                    if mode == 'percentage':
+                        pct = getattr(slip.version_id, 'hao_secondary_wage_percentage', 50.0) / 100.0
+                        # Reduce base currency ledger by the percentage taken by secondary
+                        line.amount = line.amount * (1.0 - pct)
+                        line.total = line.total * (1.0 - pct)
+                    elif mode == 'full_conversion':
+                        # Base currency ledger becomes 0, everything is in secondary
+                        line.amount = 0.0
+                        line.total = 0.0
 
             # Third pass: recalculate NET
             net_line = slip.line_ids.filtered(lambda l: l.code == 'NET')
@@ -548,25 +560,29 @@ class HrPayslipLine(models.Model):
                             line.hao_secondary_total = -amt if rule.category_id.code == 'DED' else amt
                             continue
 
-                    if hasattr(version, 'contract_wage') and version.contract_wage and employee.hao_secondary_wage:
-                        effective_rate = employee.hao_secondary_wage / version.contract_wage
-                        line.hao_secondary_total = line.total * effective_rate
-                        line.hao_secondary_amount = line.amount * effective_rate
+                    mode = getattr(version, 'hao_dual_currency_mode', 'fixed')
+                    date = line.slip_id.date_to or fields.Date.today()
+                    
+                    if mode == 'percentage':
+                        pct = getattr(version, 'hao_secondary_wage_percentage', 50.0) / 100.0
+                        # Secondary gets pct of the converted total
+                        converted_total = company_currency._convert(line.total, secondary_currency, line.slip_id.company_id, date)
+                        converted_amount = company_currency._convert(line.amount, secondary_currency, line.slip_id.company_id, date)
+                        line.hao_secondary_total = converted_total * pct
+                        line.hao_secondary_amount = converted_amount * pct
+                    elif mode == 'full_conversion':
+                        # 100% conversion
+                        line.hao_secondary_total = company_currency._convert(line.total, secondary_currency, line.slip_id.company_id, date)
+                        line.hao_secondary_amount = company_currency._convert(line.amount, secondary_currency, line.slip_id.company_id, date)
                     else:
-                        # Use today's rate (or payslip date if you prefer)
-                        date = line.slip_id.date_to or fields.Date.today()
-                        line.hao_secondary_total = company_currency._convert(
-                            line.total,
-                            secondary_currency,
-                            line.slip_id.company_id,
-                            date
-                        )
-                        line.hao_secondary_amount = company_currency._convert(
-                            line.amount,
-                            secondary_currency,
-                            line.slip_id.company_id,
-                            date
-                        )
+                        # Fixed mode (Scenario 1)
+                        if hasattr(version, 'contract_wage') and version.contract_wage and employee.hao_secondary_wage:
+                            effective_rate = employee.hao_secondary_wage / version.contract_wage
+                            line.hao_secondary_total = line.total * effective_rate
+                            line.hao_secondary_amount = line.amount * effective_rate
+                        else:
+                            line.hao_secondary_total = company_currency._convert(line.total, secondary_currency, line.slip_id.company_id, date)
+                            line.hao_secondary_amount = company_currency._convert(line.amount, secondary_currency, line.slip_id.company_id, date)
                 else:
                     line.hao_secondary_total = line.total
                     line.hao_secondary_amount = line.amount

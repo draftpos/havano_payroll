@@ -480,6 +480,23 @@ else:
             </field>
         </record>
 
+        <!-- WCIF Company Contribution -->
+        <record id="rule_wcif_comp" model="hr.salary.rule">
+            <field name="name">WCIF (Company)</field>
+            <field name="code">WCIF_COMP</field>
+            <field name="sequence">115</field>
+            <field name="category_id" ref="hr_payroll.COMP"/>
+            <field name="struct_id" ref="structure_havano_base"/>
+            <field name="appears_on_payslip">False</field>
+            <field name="appears_on_employee_cost_dashboard">True</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">
+basic = categories['BASIC'] if 'BASIC' in categories else 0.0
+pct = payslip.company_id.hao_wcif_percentage or 1.25
+result = basic * (pct / 100.0)
+            </field>
+        </record>
+
         <!-- Medical Aid Company Contribution -->
         <record id="rule_medaid_comp" model="hr.salary.rule">
             <field name="name">Medical Aid (Company)</field>

@@ -33,8 +33,11 @@ class ResConfigSettings(models.TransientModel):
         related='company_id.hao_zimdef_percentage',
         readonly=False
     )
-
-
+    
+    hao_wcif_percentage = fields.Float(
+        related='company_id.hao_wcif_percentage',
+        readonly=False
+    )
     havano_tax_credit_blind = fields.Float(
         string='Blind Person Tax Credit Amount',
         config_parameter='havano_payroll.tax_credit_blind',
