@@ -19,6 +19,24 @@
                         <field name="hao_funeral_policy_currency_id" class="oe_inline o_hr_narrow_field" nolabel="1" readonly="not hao_allow_multi_payroll_currency"/>
                     </div>
                 </group>
+                <group string="Currency &amp; Split Payment Setup" name="hao_contract_currency_setup">
+                    <field name="hao_currency_payment_setup" widget="radio" options="{'horizontal': true}"/>
+                    <field name="hao_enable_split_pay" invisible="hao_currency_payment_setup != 'dual'"/>
+                    <field name="hao_dual_currency_method" widget="radio" options="{'horizontal': true}"
+                           invisible="hao_currency_payment_setup != 'dual'"/>
+                    <field name="hao_primary_currency_id" options="{'no_create': True}"
+                           invisible="hao_currency_payment_setup != 'dual'"/>
+                    <field name="hao_primary_amount" widget="monetary" options="{'currency_field': 'hao_primary_currency_id'}"
+                           invisible="hao_currency_payment_setup != 'dual' or hao_dual_currency_method != 'exact'"/>
+                    <field name="hao_primary_percentage"
+                           invisible="hao_currency_payment_setup != 'dual' or hao_dual_currency_method != 'percentage'"/>
+                    <field name="hao_secondary_currency_id" options="{'no_create': True}"
+                           invisible="hao_currency_payment_setup != 'dual'"/>
+                    <field name="hao_secondary_amount" widget="monetary" options="{'currency_field': 'hao_secondary_currency_id'}"
+                           invisible="hao_currency_payment_setup != 'dual' or hao_dual_currency_method != 'exact'"/>
+                    <field name="hao_secondary_percentage"
+                           invisible="hao_currency_payment_setup != 'dual' or hao_dual_currency_method != 'percentage'"/>
+                </group>
             </xpath>
         </field>
     </record>

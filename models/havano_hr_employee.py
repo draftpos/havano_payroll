@@ -160,6 +160,189 @@ class HrEmployee(models.Model):
                 balance = allocated - taken
             emp.hao_annual_leave_balance = balance
 
+    # ==================== Leave Allocation & Currency Setup ====================
+    hao_max_annual_leave_days = fields.Float(
+        string='Max Annual Leave Days',
+        default=30.0,
+        help='Initial annual leave allocation in days granted upon employee creation.'
+    )
+
+    hao_currency_payment_setup = fields.Selection(
+        related='version_id.hao_currency_payment_setup',
+        inherited=True,
+        readonly=False,
+        string='Currency Payment Setup'
+    )
+    hao_dual_currency_method = fields.Selection(
+        related='version_id.hao_dual_currency_method',
+        inherited=True,
+        readonly=False,
+        string='Dual Currency Allocation Method'
+    )
+    hao_primary_currency_id = fields.Many2one(
+        'res.currency',
+        related='version_id.hao_primary_currency_id',
+        inherited=True,
+        readonly=False,
+        string='Primary Currency'
+    )
+    hao_primary_amount = fields.Monetary(
+        related='version_id.hao_primary_amount',
+        currency_field='hao_primary_currency_id',
+        inherited=True,
+        readonly=False,
+        string='Primary Currency Amount'
+    )
+    hao_primary_percentage = fields.Float(
+        related='version_id.hao_primary_percentage',
+        inherited=True,
+        readonly=False,
+        string='Primary Currency Percentage (%)'
+    )
+    hao_secondary_currency_id = fields.Many2one(
+        'res.currency',
+        related='version_id.hao_secondary_currency_id',
+        inherited=True,
+        readonly=False,
+        string='Secondary Currency'
+    )
+    hao_secondary_amount = fields.Monetary(
+        related='version_id.hao_secondary_amount',
+        currency_field='hao_secondary_currency_id',
+        inherited=True,
+        readonly=False,
+        string='Secondary Currency Amount'
+    )
+    hao_secondary_percentage = fields.Float(
+        related='version_id.hao_secondary_percentage',
+        inherited=True,
+        readonly=False,
+        string='Secondary Currency Percentage (%)'
+    )
+    hao_enable_split_pay = fields.Boolean(
+        related='version_id.hao_enable_split_pay',
+        inherited=True,
+        readonly=False,
+        string='Split Invoicing / Pay Enabled'
+    )
+
+    @api.onchange('hao_currency_payment_setup')
+    def _onchange_hao_currency_payment_setup(self):
+        for emp in self:
+            if emp.hao_currency_payment_setup == 'single':
+                emp.hao_enable_split_pay = False
+                emp.hao_secondary_wage = 0.0
+                emp.hao_secondary_amount = 0.0
+                emp.hao_secondary_percentage = 0.0
+                emp.hao_primary_percentage = 100.0
+                if emp.version_id:
+                    emp.version_id.hao_dual_currency_mode = 'fixed'
+            elif emp.hao_currency_payment_setup == 'dual':
+                emp.hao_enable_split_pay = True
+                if not emp.hao_dual_currency_method:
+                    emp.hao_dual_currency_method = 'exact'
+
+    @api.onchange('hao_dual_currency_method')
+    def _onchange_hao_dual_currency_method(self):
+        for emp in self:
+            if emp.hao_dual_currency_method == 'exact':
+                if emp.version_id:
+                    emp.version_id.hao_dual_currency_mode = 'fixed'
+            elif emp.hao_dual_currency_method == 'percentage':
+                if emp.version_id:
+                    emp.version_id.hao_dual_currency_mode = 'percentage'
+                if not emp.hao_secondary_percentage and emp.version_id and emp.version_id.hao_secondary_wage_percentage:
+                    emp.hao_secondary_percentage = emp.version_id.hao_secondary_wage_percentage
+                if emp.hao_secondary_percentage:
+                    emp.hao_primary_percentage = round(100.0 - emp.hao_secondary_percentage, 2)
+
+    @api.onchange('hao_primary_percentage')
+    def _onchange_hao_primary_percentage(self):
+        for emp in self:
+            if emp.hao_currency_payment_setup == 'dual' and emp.hao_dual_currency_method == 'percentage':
+                if 0.0 <= emp.hao_primary_percentage <= 100.0:
+                    emp.hao_secondary_percentage = round(100.0 - emp.hao_primary_percentage, 2)
+                    if emp.version_id:
+                        emp.version_id.hao_secondary_wage_percentage = emp.hao_secondary_percentage
+
+    @api.onchange('hao_secondary_percentage')
+    def _onchange_hao_secondary_percentage(self):
+        for emp in self:
+            if emp.hao_currency_payment_setup == 'dual' and emp.hao_dual_currency_method == 'percentage':
+                if 0.0 <= emp.hao_secondary_percentage <= 100.0:
+                    emp.hao_primary_percentage = round(100.0 - emp.hao_secondary_percentage, 2)
+                    if emp.version_id:
+                        emp.version_id.hao_secondary_wage_percentage = emp.hao_secondary_percentage
+
+    @api.onchange('hao_secondary_amount')
+    def _onchange_hao_secondary_amount(self):
+        for emp in self:
+            if emp.hao_currency_payment_setup == 'dual' and emp.hao_dual_currency_method == 'exact':
+                emp.hao_secondary_wage = emp.hao_secondary_amount
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        employees = super().create(vals_list)
+        leave_type = self.env.ref('havano_payroll.havano_annual_leave_type', raise_if_not_found=False)
+        if not leave_type:
+            leave_type = self.env['hr.leave.type'].sudo().search([('name', 'ilike', 'Annual Leave')], limit=1)
+
+        for emp in employees:
+            # Sync secondary wage if dual currency with exact amounts was specified
+            if emp.hao_currency_payment_setup == 'dual':
+                if emp.hao_dual_currency_method == 'exact' and emp.hao_secondary_amount and not emp.hao_secondary_wage:
+                    emp.hao_secondary_wage = emp.hao_secondary_amount
+                elif emp.hao_dual_currency_method == 'percentage' and emp.version_id and emp.hao_secondary_percentage:
+                    emp.version_id.hao_secondary_wage_percentage = emp.hao_secondary_percentage
+
+            # 1. Automatically allocate max Annual Leave Days when an employee is added
+            if leave_type:
+                existing_alloc = self.env['hr.leave.allocation'].sudo().search([
+                    ('employee_id', '=', emp.id),
+                    ('holiday_status_id', '=', leave_type.id),
+                ], limit=1)
+                if not existing_alloc:
+                    max_days = emp.hao_max_annual_leave_days if emp.hao_max_annual_leave_days > 0 else 30.0
+                    start_date = getattr(emp, 'first_contract_date', False) or getattr(emp, 'contract_date_start', False) or (emp.version_id and getattr(emp.version_id, 'date_start', False)) or fields.Date.today()
+                    alloc = self.env['hr.leave.allocation'].sudo().create({
+                        'name': f"Initial Annual Leave Allocation - {emp.name}",
+                        'employee_id': emp.id,
+                        'holiday_status_id': leave_type.id,
+                        'number_of_days': max_days,
+                        'allocation_type': 'regular',
+                        'date_from': start_date,
+                    })
+                    try:
+                        alloc._action_validate()
+                    except Exception:
+                        try:
+                            alloc.action_approve()
+                        except Exception:
+                            pass
+        return employees
+
+    def write(self, vals):
+        if vals.get('hao_currency_payment_setup') == 'dual':
+            vals['hao_enable_split_pay'] = True
+            method = vals.get('hao_dual_currency_method') or self.hao_dual_currency_method or 'exact'
+            if method == 'exact':
+                if 'hao_secondary_amount' in vals:
+                    vals['hao_secondary_wage'] = vals['hao_secondary_amount']
+            elif method == 'percentage':
+                for emp in self:
+                    if emp.version_id:
+                        if 'hao_secondary_percentage' in vals:
+                            emp.version_id.hao_secondary_wage_percentage = vals['hao_secondary_percentage']
+                        elif 'hao_primary_percentage' in vals:
+                            emp.version_id.hao_secondary_wage_percentage = round(100.0 - vals['hao_primary_percentage'], 2)
+        elif vals.get('hao_currency_payment_setup') == 'single':
+            vals['hao_enable_split_pay'] = False
+            vals['hao_secondary_wage'] = 0.0
+            vals['hao_secondary_amount'] = 0.0
+            vals['hao_secondary_percentage'] = 0.0
+            vals['hao_primary_percentage'] = 100.0
+        return super().write(vals)
+
     def action_open_payslips(self):
         return {
             'name': 'Payslips',

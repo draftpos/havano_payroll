@@ -78,7 +78,15 @@
                                     <td style="text-align: right; padding: 4px 0px; font-size: 14px;"><span t-field="o.wage_type"/></td>
                                 </tr>
                                 <tr>
-                                    <td style="padding: 4px 0px; font-weight: bold; font-size: 14px; text-transform: uppercase; white-space: nowrap;">Leave Days:</td>
+                                    <td style="padding: 4px 0px; font-weight: bold; font-size: 14px; text-transform: uppercase; white-space: nowrap;">Annual Leave Allocated:</td>
+                                    <td style="text-align: right; padding: 4px 0px; font-size: 14px;"><span t-esc="round(o.annual_leave_allocated, 2)"/> Days</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 4px 0px; font-weight: bold; font-size: 14px; text-transform: uppercase; white-space: nowrap;">Annual Leave Taken:</td>
+                                    <td style="text-align: right; padding: 4px 0px; font-size: 14px;"><span t-esc="round(o.annual_leave_taken, 2)"/> Days</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 4px 0px; font-weight: bold; font-size: 14px; text-transform: uppercase; white-space: nowrap;">Annual Leave Remaining:</td>
                                     <td style="text-align: right; padding: 4px 0px; font-size: 14px; font-weight: bold;"><span t-esc="round(o.annual_leave_balance, 2)"/> Days</td>
                                 </tr>
                             </table>
@@ -242,6 +250,18 @@
         <field name="model">hr.payslip</field>
         <field name="inherit_id" ref="hr_payroll.view_hr_payslip_form"/>
         <field name="arch" type="xml">
+            <xpath expr="//group[@name='top']" position="after">
+                <group name="hao_leave_balances" string="Annual Leave Balances" class="alert alert-info">
+                    <group>
+                        <field name="annual_leave_allocated" string="Allocated (Days)" readonly="1"/>
+                        <field name="annual_leave_taken" string="Taken (Days)" readonly="1"/>
+                    </group>
+                    <group>
+                        <field name="annual_leave_balance" string="Remaining Balance (Days)" readonly="1" class="fw-bold text-success"/>
+                        <field name="leave_allocation_id" string="Accrual Allocation" readonly="1" invisible="not leave_allocation_id"/>
+                    </group>
+                </group>
+            </xpath>
             <xpath expr="//field[@name='line_ids']" position="before">
                 <field name="hao_has_secondary_wage" invisible="1"/>
             </xpath>

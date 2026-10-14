@@ -43,30 +43,119 @@ class HrPayslip(models.Model):
         compute='_compute_hao_secondary_wages',
         currency_field='hao_secondary_payroll_currency_id'
     )
+    annual_leave_allocated = fields.Float(
+        string='Annual Leave Allocated',
+        compute='_compute_annual_leave_balance'
+    )
+    annual_leave_taken = fields.Float(
+        string='Annual Leave Taken',
+        compute='_compute_annual_leave_balance'
+    )
     annual_leave_balance = fields.Float(
         string='Annual Leave Balance',
         compute='_compute_annual_leave_balance'
     )
+    leave_allocation_id = fields.Many2one(
+        'hr.leave.allocation',
+        string='Leave Accrual Allocation',
+        readonly=True,
+        copy=False,
+        help='The 2.5-day annual leave accrual allocation created upon confirmation of this payslip.'
+    )
 
     def _compute_annual_leave_balance(self):
         leave_type = self.env.ref('havano_payroll.havano_annual_leave_type', raise_if_not_found=False)
+        if not leave_type:
+            leave_type = self.env['hr.leave.type'].sudo().search([('name', 'ilike', 'Annual Leave')], limit=1)
         for slip in self:
+            allocated = 0.0
+            taken = 0.0
             balance = 0.0
             if leave_type and slip.employee_id:
-                allocations = self.env['hr.leave.allocation'].search([
+                allocations = self.env['hr.leave.allocation'].sudo().search([
                     ('employee_id', '=', slip.employee_id.id),
                     ('holiday_status_id', '=', leave_type.id),
                     ('state', '=', 'validate')
                 ])
                 allocated = sum(allocations.mapped('number_of_days'))
-                leaves = self.env['hr.leave'].search([
+                leaves = self.env['hr.leave'].sudo().search([
                     ('employee_id', '=', slip.employee_id.id),
                     ('holiday_status_id', '=', leave_type.id),
                     ('state', '=', 'validate')
                 ])
                 taken = sum(leaves.mapped('number_of_days'))
                 balance = allocated - taken
+            slip.annual_leave_allocated = allocated
+            slip.annual_leave_taken = taken
             slip.annual_leave_balance = balance
+
+    def action_payslip_done(self):
+        res = super().action_payslip_done()
+        leave_type = self.env.ref('havano_payroll.havano_annual_leave_type', raise_if_not_found=False)
+        if not leave_type:
+            leave_type = self.env['hr.leave.type'].sudo().search([('name', 'ilike', 'Annual Leave')], limit=1)
+
+        for slip in self:
+            if not leave_type or not slip.employee_id:
+                continue
+            # Check if 2.5-day accrual allocation already exists for this payslip
+            existing_alloc = slip.leave_allocation_id or self.env['hr.leave.allocation'].sudo().search([
+                ('payslip_id', '=', slip.id),
+            ], limit=1)
+            
+            if not existing_alloc:
+                alloc = self.env['hr.leave.allocation'].sudo().create({
+                    'name': f"Payroll Leave Accrual (2.5 days) - {slip.name}",
+                    'employee_id': slip.employee_id.id,
+                    'holiday_status_id': leave_type.id,
+                    'number_of_days': 2.5,
+                    'allocation_type': 'regular',
+                    'date_from': slip.date_to or fields.Date.today(),
+                    'payslip_id': slip.id,
+                })
+                try:
+                    alloc._action_validate()
+                except Exception:
+                    try:
+                        alloc.action_approve()
+                    except Exception:
+                        pass
+                slip.leave_allocation_id = alloc.id
+        return res
+
+    def action_payslip_cancel(self):
+        res = super().action_payslip_cancel()
+        # Reverse the 2.5 days added for this payslip
+        allocations = self.env['hr.leave.allocation'].sudo().search([
+            '|',
+            ('id', 'in', self.mapped('leave_allocation_id').ids),
+            ('payslip_id', 'in', self.ids)
+        ])
+        if allocations:
+            for alloc in allocations:
+                try:
+                    alloc.action_refuse()
+                except Exception:
+                    alloc.write({'state': 'refuse'})
+            allocations.unlink()
+        return res
+
+    def action_payslip_draft(self):
+        res = super().action_payslip_draft()
+        # Cleanly remove the 2.5-day accrual if payslip is set back to draft
+        allocations = self.env['hr.leave.allocation'].sudo().search([
+            '|',
+            ('id', 'in', self.mapped('leave_allocation_id').ids),
+            ('payslip_id', 'in', self.ids)
+        ])
+        if allocations:
+            for alloc in allocations:
+                try:
+                    alloc.action_refuse()
+                except Exception:
+                    alloc.write({'state': 'refuse'})
+            allocations.unlink()
+        return res
 
     @api.depends('line_ids.hao_secondary_total', 'line_ids.salary_rule_id.appears_on_employee_cost_dashboard')
     def _compute_hao_secondary_wages(self):
@@ -303,6 +392,16 @@ class HrPayslip(models.Model):
             secondary_currency = slip.company_id.hao_secondary_payroll_currency_id
             allow_multi = slip.company_id.hao_allow_multi_payroll_currency
             
+            # Check single vs dual currency setting
+            payment_setup = getattr(slip.version_id, 'hao_currency_payment_setup', False) or getattr(slip.employee_id, 'hao_currency_payment_setup', 'single')
+            if payment_setup == 'single':
+                # Employee is Single Currency: zero out secondary ledger
+                for line in slip.line_ids:
+                    line.hao_secondary_amount = 0.0
+                    line.hao_secondary_total = 0.0
+                    line.hao_is_manual_secondary = True
+                continue
+
             for line in slip.line_ids:
                 if not allow_multi:
                     # If multi currency is off, everything computes normally on the USD base ledger!
@@ -326,8 +425,6 @@ class HrPayslip(models.Model):
                         is_base_only = True
 
                 if is_secondary_only and line.total != 0.0:
-                    # By writing 0.0, we explicitly erase the USD total from the ledger.
-                    # _compute_hao_secondary_total will see this and intentionally preserve its pre-calculated ZWG amount.
                     line.amount = 0.0
                     line.total = 0.0
                     
@@ -337,28 +434,57 @@ class HrPayslip(models.Model):
                     
                 if not is_secondary_only and not is_base_only:
                     mode = getattr(slip.version_id, 'hao_dual_currency_mode', 'fixed')
-                    if mode == 'percentage':
-                        pct = getattr(slip.version_id, 'hao_secondary_wage_percentage', 50.0) / 100.0
-                        # Reduce base currency ledger by the percentage taken by secondary
-                        line.amount = line.amount * (1.0 - pct)
-                        line.total = line.total * (1.0 - pct)
+                    alloc_method = getattr(slip.version_id, 'hao_dual_currency_method', False) or getattr(slip.employee_id, 'hao_dual_currency_method', 'exact')
+
+                    if alloc_method == 'percentage' or mode == 'percentage':
+                        pct = getattr(slip.version_id, 'hao_secondary_percentage', 0.0) or getattr(slip.employee_id, 'hao_secondary_percentage', 0.0) or getattr(slip.version_id, 'hao_secondary_wage_percentage', 50.0)
+                        pct_decimal = pct / 100.0
+                        date = slip.date_to or fields.Date.today()
+
+                        conv_tot = company_currency._convert(line.total, secondary_currency, slip.company_id, date) if (company_currency and secondary_currency) else line.total
+                        conv_amt = company_currency._convert(line.amount, secondary_currency, slip.company_id, date) if (company_currency and secondary_currency) else line.amount
+
+                        line.hao_secondary_total = conv_tot * pct_decimal
+                        line.hao_secondary_amount = conv_amt * pct_decimal
+                        line.amount = line.amount * (1.0 - pct_decimal)
+                        line.total = line.total * (1.0 - pct_decimal)
+                        line.hao_is_manual_secondary = True
                     elif mode == 'full_conversion':
-                        # Base currency ledger becomes 0, everything is in secondary
+                        date = slip.date_to or fields.Date.today()
+                        line.hao_secondary_total = company_currency._convert(line.total, secondary_currency, slip.company_id, date) if (company_currency and secondary_currency) else line.total
+                        line.hao_secondary_amount = company_currency._convert(line.amount, secondary_currency, slip.company_id, date) if (company_currency and secondary_currency) else line.amount
                         line.amount = 0.0
                         line.total = 0.0
+                        line.hao_is_manual_secondary = True
+                    elif alloc_method == 'exact' or mode == 'fixed':
+                        if line.salary_rule_id.code == 'BASIC':
+                            sec_amt = getattr(slip.version_id, 'hao_secondary_amount', 0.0) or getattr(slip.employee_id, 'hao_secondary_amount', 0.0) or getattr(slip.employee_id, 'hao_secondary_wage', 0.0)
+                            if sec_amt:
+                                line.hao_secondary_amount = sec_amt
+                                line.hao_secondary_total = sec_amt
+                                line.hao_is_manual_secondary = True
 
-            # Third pass: recalculate NET
+            # Recalculate GROSS
+            gross_line = slip.line_ids.filtered(lambda l: l.code == 'GROSS')
+            if gross_line:
+                gross_base = sum(l.total for l in slip.line_ids if l.category_id.code in ('BASIC', 'ALW') and l.code not in ('GROSS', 'NET'))
+                gross_line.amount = gross_base
+                gross_line.total = gross_base
+                gross_sec = sum(l.hao_secondary_total for l in slip.line_ids if l.category_id.code in ('BASIC', 'ALW') and l.code not in ('GROSS', 'NET'))
+                gross_line.hao_secondary_amount = gross_sec
+                gross_line.hao_secondary_total = gross_sec
+                gross_line.hao_is_manual_secondary = True
+
+            # Recalculate NET
             net_line = slip.line_ids.filtered(lambda l: l.code == 'NET')
             if net_line:
-                # Base NET
                 net_base = sum(l.total for l in slip.line_ids if l.category_id.code in ('BASIC', 'ALW', 'DED') and l.code != 'NET')
                 net_line.amount = net_base
                 net_line.total = net_base
-                
-                # Secondary NET
                 net_sec = sum(l.hao_secondary_total for l in slip.line_ids if l.category_id.code in ('BASIC', 'ALW', 'DED') and l.code != 'NET')
                 net_line.hao_secondary_amount = net_sec
                 net_line.hao_secondary_total = net_sec
+                net_line.hao_is_manual_secondary = True
 
         return res
 
@@ -671,3 +797,18 @@ class HrPayrollEditPayslipWorkedDaysLine(models.TransientModel):
             res[i]['hao_secondary_amount'] = line.hao_secondary_amount
             res[i]['hao_is_manual_secondary'] = True
         return res
+
+
+class HrLeaveAllocation(models.Model):
+    _inherit = 'hr.leave.allocation'
+
+    payslip_id = fields.Many2one(
+        'hr.payslip',
+        string='Source Payslip',
+        index=True,
+        readonly=True,
+        copy=False,
+        ondelete='cascade',
+        help='The payslip whose monthly payroll run generated this leave accrual.'
+    )
+
