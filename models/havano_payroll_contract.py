@@ -317,4 +317,87 @@ class HrVersion(models.Model):
                     version.employee_id.hao_secondary_wage = 0.0
         return super().write(vals)
 
+    hao_rule_split_ids = fields.One2many(
+        'havano.contract.rule.split',
+        'version_id',
+        string='Allowance & Rule Currency Splits'
+    )
+
+
+class HavanoContractRuleSplit(models.Model):
+    _name = 'havano.contract.rule.split'
+    _description = 'Contract Salary Rule & Allowance Split'
+
+    version_id = fields.Many2one('hr.version', string='Contract / Version', required=True, ondelete='cascade')
+    employee_id = fields.Many2one('hr.employee', string='Employee', related='version_id.employee_id', store=True)
+    salary_rule_id = fields.Many2one(
+        'hr.salary.rule',
+        string='Salary Rule / Allowance',
+        required=True,
+        domain="[('appears_on_payslip', '=', True)]"
+    )
+    rule_code = fields.Char(related='salary_rule_id.code', string='Rule Code', readonly=True)
+    split_method = fields.Selection([
+        ('percentage', 'Percentage'),
+        ('exact', 'Exact Amounts')
+    ], string='Split Method', default='percentage', required=True)
+
+    primary_currency_id = fields.Many2one(
+        'res.currency',
+        string='Primary Currency',
+        related='version_id.hao_primary_currency_id',
+        readonly=True
+    )
+    secondary_currency_id = fields.Many2one(
+        'res.currency',
+        string='Secondary Currency',
+        related='version_id.hao_secondary_currency_id',
+        readonly=True
+    )
+    total_amount = fields.Monetary(
+        string='Total Amount',
+        currency_field='primary_currency_id',
+        help='Total amount for this allowance/rule before currency split.'
+    )
+    primary_percentage = fields.Float(
+        string='Primary (%)',
+        default=80.0,
+        help='Percentage of this rule to pay in the Primary Currency (e.g. 80%).'
+    )
+    secondary_percentage = fields.Float(
+        string='Secondary (%)',
+        default=20.0,
+        help='Percentage of this rule to pay in the Secondary Currency (e.g. 20%).'
+    )
+    primary_amount = fields.Monetary(
+        string='Primary Amount',
+        currency_field='primary_currency_id',
+        help='Amount paid in primary currency.'
+    )
+    secondary_amount = fields.Monetary(
+        string='Secondary Amount',
+        currency_field='secondary_currency_id',
+        help='Amount paid in secondary currency (converted at payroll exchange rate).'
+    )
+
+    @api.onchange('split_method', 'total_amount', 'primary_percentage', 'secondary_percentage', 'primary_amount', 'secondary_amount')
+    def _onchange_split_calculation(self):
+        for rec in self:
+            rate = rec.version_id.company_id.hao_exchange_rate or 1.0
+            tot = rec.total_amount or 0.0
+            if rec.split_method == 'percentage':
+                if 0.0 <= rec.primary_percentage <= 100.0:
+                    rec.secondary_percentage = round(100.0 - rec.primary_percentage, 2)
+                    if tot > 0:
+                        rec.primary_amount = round(tot * (rec.primary_percentage / 100.0), 2)
+                        rec.secondary_amount = round(tot * (rec.secondary_percentage / 100.0) * rate, 2)
+            elif rec.split_method == 'exact':
+                if tot > 0:
+                    prim = rec.primary_amount or 0.0
+                    rem = max(tot - prim, 0.0)
+                    rec.secondary_amount = round(rem * rate, 2)
+                    rec.primary_percentage = round((prim / tot) * 100.0, 2)
+                    rec.secondary_percentage = round(100.0 - rec.primary_percentage, 2)
+
+
 

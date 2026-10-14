@@ -10,3 +10,5 @@ access_havano_zim_report_wizard_user,havano.zim.report.wizard.user,model_havano_
 access_havano_nec_grade_user,havano.nec.grade.user,model_havano_nec_grade,base.group_user,1,1,1,1
 access_havano_employee_ytd_user,havano.employee.ytd.user,model_havano_employee_ytd,hr_payroll.group_hr_payroll_user,1,1,1,0
 access_havano_employee_ytd_manager,havano.employee.ytd.manager,model_havano_employee_ytd,hr_payroll.group_hr_payroll_manager,1,1,1,1
+access_havano_contract_rule_split_user,havano.contract.rule.split.user,model_havano_contract_rule_split,hr_payroll.group_hr_payroll_user,1,1,1,1
+access_havano_contract_rule_split_manager,havano.contract.rule.split.manager,model_havano_contract_rule_split,hr_payroll.group_hr_payroll_manager,1,1,1,1

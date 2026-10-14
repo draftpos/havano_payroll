@@ -225,6 +225,11 @@ class HrEmployee(models.Model):
         readonly=False,
         string='Split Invoicing / Pay Enabled'
     )
+    hao_rule_split_ids = fields.One2many(
+        related='version_id.hao_rule_split_ids',
+        readonly=False,
+        string='Allowance & Rule Currency Splits'
+    )
 
     @api.onchange('hao_currency_payment_setup')
     def _onchange_hao_currency_payment_setup(self):

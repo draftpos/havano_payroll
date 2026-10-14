@@ -402,6 +402,8 @@ class HrPayslip(models.Model):
                     line.hao_is_manual_secondary = True
                 continue
 
+            rule_splits = {s.salary_rule_id.id: s for s in (slip.version_id.hao_rule_split_ids if slip.version_id else [])}
+
             for line in slip.line_ids:
                 if not allow_multi:
                     # If multi currency is off, everything computes normally on the USD base ledger!
@@ -434,6 +436,28 @@ class HrPayslip(models.Model):
                     
                 if not is_secondary_only and not is_base_only:
                     if line.salary_rule_id.code in ('GROSS', 'NET'):
+                        continue
+
+                    # 1. Custom Rule Split for this specific employee / allowance
+                    if line.salary_rule_id.id in rule_splits:
+                        rule_split = rule_splits[line.salary_rule_id.id]
+                        tot = rule_split.total_amount or line.total or line.amount or 0.0
+                        exchange_rate = slip.company_id.hao_exchange_rate or 1.0
+
+                        if rule_split.split_method == 'exact':
+                            prim = rule_split.primary_amount or 0.0
+                            sec = rule_split.secondary_amount or round(max(tot - prim, 0.0) * exchange_rate, 2)
+                        else:
+                            prim_pct = (rule_split.primary_percentage or 80.0) / 100.0
+                            sec_pct = (rule_split.secondary_percentage or 20.0) / 100.0
+                            prim = round(tot * prim_pct, 2)
+                            sec = round(tot * sec_pct * exchange_rate, 2)
+
+                        line.amount = prim
+                        line.total = prim
+                        line.hao_secondary_amount = sec
+                        line.hao_secondary_total = sec
+                        line.hao_is_manual_secondary = True
                         continue
 
                     exchange_rate = slip.company_id.hao_exchange_rate or 1.0

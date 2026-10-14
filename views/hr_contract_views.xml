@@ -39,6 +39,21 @@
                     <field name="hao_secondary_percentage"
                            invisible="hao_currency_payment_setup != 'dual' or hao_dual_currency_method != 'percentage'"/>
                 </group>
+                <group string="Allowance &amp; Rule Currency Splits" name="hao_rule_splits_group" colspan="2" invisible="hao_currency_payment_setup != 'dual'">
+                    <field name="hao_rule_split_ids" nolabel="1" colspan="2">
+                        <list editable="bottom">
+                            <field name="salary_rule_id" options="{'no_create': True}"/>
+                            <field name="split_method"/>
+                            <field name="total_amount"/>
+                            <field name="primary_percentage" invisible="split_method != 'percentage'"/>
+                            <field name="secondary_percentage" invisible="split_method != 'percentage'"/>
+                            <field name="primary_amount" widget="monetary" options="{'currency_field': 'primary_currency_id'}"/>
+                            <field name="secondary_amount" widget="monetary" options="{'currency_field': 'secondary_currency_id'}"/>
+                            <field name="primary_currency_id" column_invisible="1"/>
+                            <field name="secondary_currency_id" column_invisible="1"/>
+                        </list>
+                    </field>
+                </group>
             </xpath>
         </field>
     </record>
