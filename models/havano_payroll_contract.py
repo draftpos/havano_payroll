@@ -257,11 +257,12 @@ class HrVersion(models.Model):
                             version.employee_id.hao_secondary_wage = sec
 
     def write(self, vals):
-        if vals.get('hao_currency_payment_setup') == 'dual':
+        setup = vals.get('hao_currency_payment_setup') or (self[0].hao_currency_payment_setup if self else False)
+        if setup == 'dual':
             vals['hao_enable_split_pay'] = True
-            method = vals.get('hao_dual_currency_method') or self.hao_dual_currency_method or 'exact'
+            method = vals.get('hao_dual_currency_method') or (self[0].hao_dual_currency_method if self else 'exact') or 'exact'
             rate = self.company_id.hao_exchange_rate or 1.0
-            wage = vals.get('contract_wage') or vals.get('wage') or self.contract_wage or 0.0
+            wage = vals.get('contract_wage') or vals.get('wage') or (self[0].contract_wage if self else 0.0) or 0.0
             if method == 'exact':
                 vals['hao_dual_currency_mode'] = 'fixed'
                 if 'hao_primary_amount' in vals and 'hao_secondary_amount' not in vals:
