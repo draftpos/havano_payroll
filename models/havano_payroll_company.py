@@ -19,8 +19,9 @@ class ResCompany(models.Model):
     )
     payslip_format = fields.Selection([
         ('standard', 'Standard'),
-        ('landscape_3_per_page', 'Landscape 3 Per Page (Fresh Company)')
-    ], string="Payslip Format", default='landscape_3_per_page')
+        ('modern', 'Modern'),
+        ('landscape_3_per_page', 'Landscape 3 Per Page (Bellina / Fresh Company)')
+    ], string="Payslip Format", default='standard')
 
     # ==================== FDS TAX CALCULATION ====================
     tax_calculation_method = fields.Selection([
