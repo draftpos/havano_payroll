@@ -148,58 +148,163 @@ class HrVersion(models.Model):
                 version.hao_enable_split_pay = True
                 if not version.hao_dual_currency_method:
                     version.hao_dual_currency_method = 'exact'
+                wage = version.contract_wage or 0.0
+                rate = version.company_id.hao_exchange_rate or 1.0
+                if version.hao_dual_currency_method == 'exact' and wage > 0:
+                    if not version.hao_primary_amount:
+                        version.hao_primary_amount = round(wage / 2.0, 2)
+                    remaining = max(wage - version.hao_primary_amount, 0.0)
+                    sec_amt = round(remaining * rate, 2)
+                    version.hao_secondary_amount = sec_amt
+                    if hasattr(version, 'employee_id') and version.employee_id:
+                        version.employee_id.hao_secondary_wage = sec_amt
+                    version.hao_primary_percentage = round((version.hao_primary_amount / wage) * 100.0, 2)
+                    version.hao_secondary_percentage = round(100.0 - version.hao_primary_percentage, 2)
 
     @api.onchange('hao_dual_currency_method')
     def _onchange_hao_dual_currency_method(self):
         for version in self:
+            wage = version.contract_wage or 0.0
+            rate = version.company_id.hao_exchange_rate or 1.0
             if version.hao_dual_currency_method == 'exact':
                 version.hao_dual_currency_mode = 'fixed'
+                if wage > 0:
+                    if not version.hao_primary_amount:
+                        version.hao_primary_amount = round(wage / 2.0, 2)
+                    remaining = max(wage - version.hao_primary_amount, 0.0)
+                    sec_amt = round(remaining * rate, 2)
+                    version.hao_secondary_amount = sec_amt
+                    if hasattr(version, 'employee_id') and version.employee_id:
+                        version.employee_id.hao_secondary_wage = sec_amt
+                    version.hao_primary_percentage = round((version.hao_primary_amount / wage) * 100.0, 2)
+                    version.hao_secondary_percentage = round(100.0 - version.hao_primary_percentage, 2)
             elif version.hao_dual_currency_method == 'percentage':
                 version.hao_dual_currency_mode = 'percentage'
-                if not version.hao_secondary_percentage and version.hao_secondary_wage_percentage:
-                    version.hao_secondary_percentage = version.hao_secondary_wage_percentage
-                if version.hao_secondary_percentage:
-                    version.hao_primary_percentage = round(100.0 - version.hao_secondary_percentage, 2)
+                if not version.hao_secondary_percentage:
+                    version.hao_secondary_percentage = version.hao_secondary_wage_percentage or 50.0
+                version.hao_primary_percentage = round(100.0 - version.hao_secondary_percentage, 2)
+                if wage > 0:
+                    version.hao_primary_amount = round(wage * (version.hao_primary_percentage / 100.0), 2)
+                    sec_amt = round(wage * (version.hao_secondary_percentage / 100.0) * rate, 2)
+                    version.hao_secondary_amount = sec_amt
+                    if hasattr(version, 'employee_id') and version.employee_id:
+                        version.employee_id.hao_secondary_wage = sec_amt
 
-    @api.onchange('hao_primary_percentage')
-    def _onchange_hao_primary_percentage(self):
+    @api.onchange('hao_primary_amount', 'contract_wage')
+    def _onchange_hao_primary_amount(self):
         for version in self:
-            if version.hao_currency_payment_setup == 'dual' and version.hao_dual_currency_method == 'percentage':
-                if 0.0 <= version.hao_primary_percentage <= 100.0:
+            if version.hao_currency_payment_setup == 'dual' and version.hao_dual_currency_method == 'exact':
+                wage = version.contract_wage or 0.0
+                rate = version.company_id.hao_exchange_rate or 1.0
+                prim = version.hao_primary_amount or 0.0
+                if wage > 0:
+                    remaining = max(wage - prim, 0.0)
+                    sec_amt = round(remaining * rate, 2)
+                    version.hao_secondary_amount = sec_amt
+                    if hasattr(version, 'employee_id') and version.employee_id:
+                        version.employee_id.hao_secondary_wage = sec_amt
+                    version.hao_primary_percentage = round((prim / wage) * 100.0, 2)
                     version.hao_secondary_percentage = round(100.0 - version.hao_primary_percentage, 2)
-                    version.hao_secondary_wage_percentage = version.hao_secondary_percentage
-
-    @api.onchange('hao_secondary_percentage')
-    def _onchange_hao_secondary_percentage(self):
-        for version in self:
-            if version.hao_currency_payment_setup == 'dual' and version.hao_dual_currency_method == 'percentage':
-                if 0.0 <= version.hao_secondary_percentage <= 100.0:
-                    version.hao_primary_percentage = round(100.0 - version.hao_secondary_percentage, 2)
-                    version.hao_secondary_wage_percentage = version.hao_secondary_percentage
 
     @api.onchange('hao_secondary_amount')
     def _onchange_hao_secondary_amount(self):
         for version in self:
             if version.hao_currency_payment_setup == 'dual' and version.hao_dual_currency_method == 'exact':
+                wage = version.contract_wage or 0.0
+                rate = version.company_id.hao_exchange_rate or 1.0
+                sec = version.hao_secondary_amount or 0.0
                 if hasattr(version, 'employee_id') and version.employee_id:
-                    version.employee_id.hao_secondary_wage = version.hao_secondary_amount
+                    version.employee_id.hao_secondary_wage = sec
+                if wage > 0 and rate > 0:
+                    sec_in_base = sec / rate
+                    prim = max(round(wage - sec_in_base, 2), 0.0)
+                    version.hao_primary_amount = prim
+                    version.hao_primary_percentage = round((prim / wage) * 100.0, 2)
+                    version.hao_secondary_percentage = round(100.0 - version.hao_primary_percentage, 2)
+
+    @api.onchange('hao_primary_percentage', 'contract_wage')
+    def _onchange_hao_primary_percentage(self):
+        for version in self:
+            if version.hao_currency_payment_setup == 'dual' and version.hao_dual_currency_method == 'percentage':
+                wage = version.contract_wage or 0.0
+                rate = version.company_id.hao_exchange_rate or 1.0
+                if 0.0 <= version.hao_primary_percentage <= 100.0:
+                    version.hao_secondary_percentage = round(100.0 - version.hao_primary_percentage, 2)
+                    version.hao_secondary_wage_percentage = version.hao_secondary_percentage
+                    if wage > 0:
+                        prim = round(wage * (version.hao_primary_percentage / 100.0), 2)
+                        sec = round(wage * (version.hao_secondary_percentage / 100.0) * rate, 2)
+                        version.hao_primary_amount = prim
+                        version.hao_secondary_amount = sec
+                        if hasattr(version, 'employee_id') and version.employee_id:
+                            version.employee_id.hao_secondary_wage = sec
+
+    @api.onchange('hao_secondary_percentage', 'contract_wage')
+    def _onchange_hao_secondary_percentage(self):
+        for version in self:
+            if version.hao_currency_payment_setup == 'dual' and version.hao_dual_currency_method == 'percentage':
+                wage = version.contract_wage or 0.0
+                rate = version.company_id.hao_exchange_rate or 1.0
+                if 0.0 <= version.hao_secondary_percentage <= 100.0:
+                    version.hao_primary_percentage = round(100.0 - version.hao_secondary_percentage, 2)
+                    version.hao_secondary_wage_percentage = version.hao_secondary_percentage
+                    if wage > 0:
+                        prim = round(wage * (version.hao_primary_percentage / 100.0), 2)
+                        sec = round(wage * (version.hao_secondary_percentage / 100.0) * rate, 2)
+                        version.hao_primary_amount = prim
+                        version.hao_secondary_amount = sec
+                        if hasattr(version, 'employee_id') and version.employee_id:
+                            version.employee_id.hao_secondary_wage = sec
 
     def write(self, vals):
         if vals.get('hao_currency_payment_setup') == 'dual':
             vals['hao_enable_split_pay'] = True
             method = vals.get('hao_dual_currency_method') or self.hao_dual_currency_method or 'exact'
+            rate = self.company_id.hao_exchange_rate or 1.0
+            wage = vals.get('contract_wage') or vals.get('wage') or self.contract_wage or 0.0
             if method == 'exact':
                 vals['hao_dual_currency_mode'] = 'fixed'
-                if 'hao_secondary_amount' in vals:
+                if 'hao_primary_amount' in vals and 'hao_secondary_amount' not in vals:
+                    prim = vals['hao_primary_amount']
+                    sec_amt = round(max(wage - prim, 0.0) * rate, 2)
+                    vals['hao_secondary_amount'] = sec_amt
+                    if wage > 0:
+                        vals['hao_primary_percentage'] = round((prim / wage) * 100.0, 2)
+                        vals['hao_secondary_percentage'] = round(100.0 - vals['hao_primary_percentage'], 2)
+                elif 'hao_secondary_amount' in vals and 'hao_primary_amount' not in vals:
+                    sec = vals['hao_secondary_amount']
+                    prim = round(max(wage - (sec / rate if rate else 0.0), 0.0), 2)
+                    vals['hao_primary_amount'] = prim
+                    if wage > 0:
+                        vals['hao_primary_percentage'] = round((prim / wage) * 100.0, 2)
+                        vals['hao_secondary_percentage'] = round(100.0 - vals['hao_primary_percentage'], 2)
+                
+                sec_to_set = vals.get('hao_secondary_amount') or self.hao_secondary_amount
+                if sec_to_set is not None:
                     for version in self:
                         if hasattr(version, 'employee_id') and version.employee_id:
-                            version.employee_id.hao_secondary_wage = vals['hao_secondary_amount']
+                            version.employee_id.hao_secondary_wage = sec_to_set
             elif method == 'percentage':
                 vals['hao_dual_currency_mode'] = 'percentage'
                 if 'hao_secondary_percentage' in vals:
-                    vals['hao_secondary_wage_percentage'] = vals['hao_secondary_percentage']
+                    sec_pct = vals['hao_secondary_percentage']
+                    vals['hao_secondary_wage_percentage'] = sec_pct
+                    vals['hao_primary_percentage'] = round(100.0 - sec_pct, 2)
                 elif 'hao_primary_percentage' in vals:
-                    vals['hao_secondary_wage_percentage'] = round(100.0 - vals['hao_primary_percentage'], 2)
+                    prim_pct = vals['hao_primary_percentage']
+                    sec_pct = round(100.0 - prim_pct, 2)
+                    vals['hao_secondary_percentage'] = sec_pct
+                    vals['hao_secondary_wage_percentage'] = sec_pct
+                else:
+                    sec_pct = self.hao_secondary_percentage or 50.0
+
+                if wage > 0:
+                    vals['hao_primary_amount'] = round(wage * ((100.0 - sec_pct) / 100.0), 2)
+                    sec_amt = round(wage * (sec_pct / 100.0) * rate, 2)
+                    vals['hao_secondary_amount'] = sec_amt
+                    for version in self:
+                        if hasattr(version, 'employee_id') and version.employee_id:
+                            version.employee_id.hao_secondary_wage = sec_amt
         elif vals.get('hao_currency_payment_setup') == 'single':
             vals['hao_enable_split_pay'] = False
             vals['hao_secondary_amount'] = 0.0

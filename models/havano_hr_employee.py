@@ -256,29 +256,69 @@ class HrEmployee(models.Model):
                 if emp.hao_secondary_percentage:
                     emp.hao_primary_percentage = round(100.0 - emp.hao_secondary_percentage, 2)
 
-    @api.onchange('hao_primary_percentage')
-    def _onchange_hao_primary_percentage(self):
+    @api.onchange('hao_primary_amount', 'wage', 'hao_currency_payment_setup', 'hao_dual_currency_method')
+    def _onchange_hao_primary_amount(self):
         for emp in self:
-            if emp.hao_currency_payment_setup == 'dual' and emp.hao_dual_currency_method == 'percentage':
-                if 0.0 <= emp.hao_primary_percentage <= 100.0:
+            if emp.hao_currency_payment_setup == 'dual' and emp.hao_dual_currency_method == 'exact':
+                wage = emp.wage or (emp.version_id.contract_wage if emp.version_id else 0.0) or 0.0
+                rate = emp.company_id.hao_exchange_rate or 1.0
+                prim = emp.hao_primary_amount or 0.0
+                if wage > 0:
+                    remaining = max(wage - prim, 0.0)
+                    sec_amt = round(remaining * rate, 2)
+                    emp.hao_secondary_amount = sec_amt
+                    emp.hao_secondary_wage = sec_amt
+                    emp.hao_primary_percentage = round((prim / wage) * 100.0, 2)
                     emp.hao_secondary_percentage = round(100.0 - emp.hao_primary_percentage, 2)
-                    if emp.version_id:
-                        emp.version_id.hao_secondary_wage_percentage = emp.hao_secondary_percentage
-
-    @api.onchange('hao_secondary_percentage')
-    def _onchange_hao_secondary_percentage(self):
-        for emp in self:
-            if emp.hao_currency_payment_setup == 'dual' and emp.hao_dual_currency_method == 'percentage':
-                if 0.0 <= emp.hao_secondary_percentage <= 100.0:
-                    emp.hao_primary_percentage = round(100.0 - emp.hao_secondary_percentage, 2)
-                    if emp.version_id:
-                        emp.version_id.hao_secondary_wage_percentage = emp.hao_secondary_percentage
 
     @api.onchange('hao_secondary_amount')
     def _onchange_hao_secondary_amount(self):
         for emp in self:
             if emp.hao_currency_payment_setup == 'dual' and emp.hao_dual_currency_method == 'exact':
                 emp.hao_secondary_wage = emp.hao_secondary_amount
+                wage = emp.wage or (emp.version_id.contract_wage if emp.version_id else 0.0) or 0.0
+                rate = emp.company_id.hao_exchange_rate or 1.0
+                sec = emp.hao_secondary_amount or 0.0
+                if wage > 0 and rate > 0:
+                    sec_in_base = sec / rate
+                    prim = max(round(wage - sec_in_base, 2), 0.0)
+                    emp.hao_primary_amount = prim
+                    emp.hao_primary_percentage = round((prim / wage) * 100.0, 2)
+                    emp.hao_secondary_percentage = round(100.0 - emp.hao_primary_percentage, 2)
+
+    @api.onchange('hao_primary_percentage', 'wage')
+    def _onchange_hao_primary_percentage(self):
+        for emp in self:
+            if emp.hao_currency_payment_setup == 'dual' and emp.hao_dual_currency_method == 'percentage':
+                wage = emp.wage or (emp.version_id.contract_wage if emp.version_id else 0.0) or 0.0
+                rate = emp.company_id.hao_exchange_rate or 1.0
+                if 0.0 <= emp.hao_primary_percentage <= 100.0:
+                    emp.hao_secondary_percentage = round(100.0 - emp.hao_primary_percentage, 2)
+                    if emp.version_id:
+                        emp.version_id.hao_secondary_wage_percentage = emp.hao_secondary_percentage
+                    if wage > 0:
+                        prim = round(wage * (emp.hao_primary_percentage / 100.0), 2)
+                        sec = round(wage * (emp.hao_secondary_percentage / 100.0) * rate, 2)
+                        emp.hao_primary_amount = prim
+                        emp.hao_secondary_amount = sec
+                        emp.hao_secondary_wage = sec
+
+    @api.onchange('hao_secondary_percentage', 'wage')
+    def _onchange_hao_secondary_percentage(self):
+        for emp in self:
+            if emp.hao_currency_payment_setup == 'dual' and emp.hao_dual_currency_method == 'percentage':
+                wage = emp.wage or (emp.version_id.contract_wage if emp.version_id else 0.0) or 0.0
+                rate = emp.company_id.hao_exchange_rate or 1.0
+                if 0.0 <= emp.hao_secondary_percentage <= 100.0:
+                    emp.hao_primary_percentage = round(100.0 - emp.hao_secondary_percentage, 2)
+                    if emp.version_id:
+                        emp.version_id.hao_secondary_wage_percentage = emp.hao_secondary_percentage
+                    if wage > 0:
+                        prim = round(wage * (emp.hao_primary_percentage / 100.0), 2)
+                        sec = round(wage * (emp.hao_secondary_percentage / 100.0) * rate, 2)
+                        emp.hao_primary_amount = prim
+                        emp.hao_secondary_amount = sec
+                        emp.hao_secondary_wage = sec
 
     @api.model_create_multi
     def create(self, vals_list):
