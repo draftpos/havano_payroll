@@ -29,6 +29,16 @@
             <field name="amount_python_compute">result = payslip.paid_amount</field>
         </record>
 
+        <record id="rule_gross_salary" model="hr.salary.rule">
+            <field name="name">Taxable Salary</field>
+            <field name="code">GROSS</field>
+            <field name="sequence">100</field>
+            <field name="category_id" ref="hr_payroll.GROSS"/>
+            <field name="struct_id" ref="structure_havano_base"/>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">result = categories['BASIC'] + categories['ALW']</field>
+        </record>
+
         <record id="rule_nssa" model="hr.salary.rule">
             <field name="name">NSSA</field>
             <field name="code">NSSA</field>
@@ -298,6 +308,20 @@ result = abs(result_rules['NEC']['total']) if 'NEC' in result_rules else 0.0
 gross = categories['GROSS'] if 'GROSS' in categories else (categories['BASIC'] if 'BASIC' in categories else 0.0)
 pct = payslip.company_id.hao_zimdef_percentage if payslip.company_id.hao_zimdef_percentage else 1.0
 result = gross * (pct / 100.0)
+            </field>
+        </record>
+
+        <!-- ZIMDEF Employee Deduction -->
+        <record id="rule_zimdef_emp" model="hr.salary.rule">
+            <field name="name">ZIMDEF</field>
+            <field name="code">ZIMDEF</field>
+            <field name="sequence">114</field>
+            <field name="category_id" ref="hr_payroll.DED"/>
+            <field name="struct_id" ref="structure_havano_base"/>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">
+gross = categories['GROSS'] if 'GROSS' in categories else (categories['BASIC'] if 'BASIC' in categories else 0.0)
+result = - (gross * 0.01)
             </field>
         </record>
 
@@ -585,6 +609,17 @@ for line in payslip.input_line_ids:
 basic = categories['BASIC'] if 'BASIC' in categories else 0.0
 result = cil_days * (basic / 26.0)
             </field>
+        </record>
+
+        <!-- Net Salary -->
+        <record id="rule_net_salary" model="hr.salary.rule">
+            <field name="name">Net Salary</field>
+            <field name="code">NET</field>
+            <field name="sequence">200</field>
+            <field name="category_id" ref="hr_payroll.NET"/>
+            <field name="struct_id" ref="structure_havano_base"/>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">result = categories['BASIC'] + categories['ALW'] + categories['DED']</field>
         </record>
     </data>
 </odoo>
