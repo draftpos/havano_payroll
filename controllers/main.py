@@ -22,7 +22,7 @@ class HavanoPayrollController(http.Controller):
             # Check if using the landscape layout format which should NOT be separated
             payslip_format = slips and slips[0].company_id.payslip_format or 'standard'
             
-            if payslip_format == 'landscape_3_per_page':
+            if payslip_format in ('landscape_3_per_page', 'standard', 'modern'):
                 # Generate them all together in ONE single PDF rendering call
                 pdf_content, _ = request.env['ir.actions.report'].\
                     with_context(lang=slips[0].employee_id.lang or slips.env.lang).\

@@ -5,10 +5,10 @@
         <field name="default" eval="False"/>
         <field name="format">A4</field>
         <field name="orientation">Portrait</field>
-        <field name="margin_top">10</field>
-        <field name="margin_bottom">15</field>
-        <field name="margin_left">10</field>
-        <field name="margin_right">10</field>
+        <field name="margin_top">6</field>
+        <field name="margin_bottom">6</field>
+        <field name="margin_left">8</field>
+        <field name="margin_right">8</field>
         <field name="header_line" eval="False"/>
         <field name="header_spacing">0</field>
         <field name="dpi">90</field>
@@ -26,20 +26,17 @@
             <div class="page" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 14px; line-height: 1.5; color: #333; width: 100%; margin: 0; padding: 0;">
                 
                 <style>
-                    /* Eliminate phantom cell borders and table grid lines in wkhtmltopdf */
-                    .o_ignore_layout_styling,
-                    table.o_ignore_layout_styling,
-                    table.o_ignore_layout_styling tr,
-                    table.o_ignore_layout_styling th,
-                    table.o_ignore_layout_styling td {
-                        border-collapse: separate !important;
-                        border-spacing: 0 !important;
-                        border: none !important;
-                        border-style: none !important;
+                    .payslip-table {
+                        width: 100%;
+                        border-collapse: collapse !important;
+                        border: 1px solid #1a1a2e !important;
                     }
-                    table {
-                        border-collapse: separate !important;
-                        border-spacing: 0 !important;
+                    .payslip-table th {
+                        border: 1px solid #1a1a2e !important;
+                        background-color: #f1f5f9;
+                    }
+                    .payslip-table td {
+                        border: 1px solid #cbd5e1 !important;
                     }
                 </style>
 
@@ -120,16 +117,16 @@
                 <t t-set="total_deductions_usd" t-value="abs(sum(deductions_lines.mapped('total')))"/>
                 <t t-set="total_deductions_zwg" t-value="abs(sum(deductions_lines.mapped('hao_secondary_total')))"/>
 
-                <table class="o_ignore_layout_styling" style="width: 100%; border-collapse: separate !important; border-spacing: 0 !important; border: none !important; margin-bottom: 25px;">
+                <table style="width: 100%; border-collapse: collapse; margin-bottom: 25px;">
                     <tr>
                         <!-- EARNINGS COLUMN -->
-                        <td style="width: 50%; vertical-align: top; padding-right: 15px; border-right: 1px solid #e0e0e0 !important; border-top: none !important; border-bottom: none !important; border-left: none !important;">
-                            <table class="o_ignore_layout_styling" style="width: 100%; border-collapse: separate !important; border-spacing: 0 !important; border: none !important;">
+                        <td style="width: 50%; vertical-align: top; padding-right: 10px;">
+                            <table style="width: 100%; border-collapse: collapse; border: 1px solid #1a1a2e;">
                                 <thead>
-                                    <tr>
-                                        <th style="text-align: left; border-bottom: 3px solid #000 !important; border-top: none !important; border-left: none !important; border-right: none !important; padding: 10px 8px; font-size: 13px; font-weight: 700; color: #1a1a2e; text-transform: uppercase;">EARNINGS</th>
-                                        <th style="text-align: right; border-bottom: 3px solid #000 !important; border-top: none !important; border-left: none !important; border-right: none !important; padding: 10px 8px; font-size: 13px; font-weight: 700; color: #1a1a2e; text-transform: uppercase;">AMOUNT(<span t-esc="o.currency_id.name"/>)</th>
-                                        <th t-if="o.company_id.hao_allow_multi_payroll_currency" style="text-align: right; border-bottom: 3px solid #000 !important; border-top: none !important; border-left: none !important; border-right: none !important; padding: 10px 8px; font-size: 13px; font-weight: 700; color: #1a1a2e; text-transform: uppercase;">
+                                    <tr style="background-color: #f1f5f9;">
+                                        <th style="text-align: left; border: 1px solid #1a1a2e !important; padding: 8px 8px; font-size: 13px; font-weight: 700; color: #1a1a2e; text-transform: uppercase;">EARNINGS</th>
+                                        <th style="text-align: right; border: 1px solid #1a1a2e !important; padding: 8px 8px; font-size: 13px; font-weight: 700; color: #1a1a2e; text-transform: uppercase;">AMOUNT(<span t-esc="o.currency_id.name"/>)</th>
+                                        <th t-if="o.company_id.hao_allow_multi_payroll_currency" style="text-align: right; border: 1px solid #1a1a2e !important; padding: 8px 8px; font-size: 13px; font-weight: 700; color: #1a1a2e; text-transform: uppercase;">
                                             AMOUNT(<span t-esc="o.company_id.hao_secondary_payroll_currency_id.name"/>)
                                         </th>
                                     </tr>
@@ -137,29 +134,40 @@
                                 <tbody>
                                     <t t-foreach="earnings_lines" t-as="line">
                                         <tr>
-                                            <td style="padding: 10px 8px; font-size: 14px; color: #333; border: none !important;">
+                                            <td style="padding: 7px 8px; font-size: 13px; color: #333; border: 1px solid #cbd5e1 !important;">
                                                 <span t-field="line.name"/>
                                             </td>
-                                            <td style="text-align: right; padding: 10px 8px; font-size: 14px; color: #333; border: none !important;">
+                                            <td style="text-align: right; padding: 7px 8px; font-size: 13px; color: #333; border: 1px solid #cbd5e1 !important;">
                                                 <span t-esc="line.total" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
                                             </td>
-                                            <td t-if="o.company_id.hao_allow_multi_payroll_currency" style="text-align: right; padding: 10px 8px; font-size: 14px; color: #333; border: none !important;">
+                                            <td t-if="o.company_id.hao_allow_multi_payroll_currency" style="text-align: right; padding: 7px 8px; font-size: 13px; color: #333; border: 1px solid #cbd5e1 !important;">
                                                 <span t-esc="line.hao_secondary_total" t-options='{"widget": "monetary", "display_currency": o.company_id.hao_secondary_payroll_currency_id}'/>
                                             </td>
                                         </tr>
                                     </t>
                                 </tbody>
+                                <tfoot>
+                                    <tr style="background-color: #f8fafc;">
+                                        <td style="padding: 8px 8px; font-weight: bold; font-size: 13px; color: #1a1a2e; text-align: left; border: 1px solid #1a1a2e !important;">Total</td>
+                                        <td style="text-align: right; padding: 8px 8px; font-weight: bold; font-size: 13px; color: #1a1a2e; border: 1px solid #1a1a2e !important;">
+                                            <span t-esc="total_earnings_usd" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                        </td>
+                                        <td t-if="o.company_id.hao_allow_multi_payroll_currency" style="text-align: right; padding: 8px 8px; font-weight: bold; font-size: 13px; color: #1a1a2e; border: 1px solid #1a1a2e !important;">
+                                            <span t-esc="total_earnings_zwg" t-options='{"widget": "monetary", "display_currency": o.company_id.hao_secondary_payroll_currency_id}'/>
+                                        </td>
+                                    </tr>
+                                </tfoot>
                             </table>
                         </td>
                         
                         <!-- DEDUCTIONS COLUMN -->
-                        <td style="width: 50%; vertical-align: top; padding-left: 15px; border: none !important;">
-                            <table class="o_ignore_layout_styling" style="width: 100%; border-collapse: separate !important; border-spacing: 0 !important; border: none !important;">
+                        <td style="width: 50%; vertical-align: top; padding-left: 10px;">
+                            <table style="width: 100%; border-collapse: collapse; border: 1px solid #1a1a2e;">
                                 <thead>
-                                    <tr>
-                                        <th style="text-align: left; border-bottom: 3px solid #000 !important; border-top: none !important; border-left: none !important; border-right: none !important; padding: 10px 8px; font-size: 13px; font-weight: 700; color: #1a1a2e; text-transform: uppercase;">DEDUCTIONS</th>
-                                        <th style="text-align: right; border-bottom: 3px solid #000 !important; border-top: none !important; border-left: none !important; border-right: none !important; padding: 10px 8px; font-size: 13px; font-weight: 700; color: #1a1a2e; text-transform: uppercase;">AMOUNT(<span t-esc="o.currency_id.name"/>)</th>
-                                        <th t-if="o.company_id.hao_allow_multi_payroll_currency" style="text-align: right; border-bottom: 3px solid #000 !important; border-top: none !important; border-left: none !important; border-right: none !important; padding: 10px 8px; font-size: 13px; font-weight: 700; color: #1a1a2e; text-transform: uppercase;">
+                                    <tr style="background-color: #f1f5f9;">
+                                        <th style="text-align: left; border: 1px solid #1a1a2e !important; padding: 8px 8px; font-size: 13px; font-weight: 700; color: #1a1a2e; text-transform: uppercase;">DEDUCTIONS</th>
+                                        <th style="text-align: right; border: 1px solid #1a1a2e !important; padding: 8px 8px; font-size: 13px; font-weight: 700; color: #1a1a2e; text-transform: uppercase;">AMOUNT(<span t-esc="o.currency_id.name"/>)</th>
+                                        <th t-if="o.company_id.hao_allow_multi_payroll_currency" style="text-align: right; border: 1px solid #1a1a2e !important; padding: 8px 8px; font-size: 13px; font-weight: 700; color: #1a1a2e; text-transform: uppercase;">
                                             AMOUNT(<span t-esc="o.company_id.hao_secondary_payroll_currency_id.name"/>)
                                         </th>
                                     </tr>
@@ -167,52 +175,29 @@
                                 <tbody>
                                     <t t-foreach="deductions_lines" t-as="line">
                                         <tr>
-                                            <td style="padding: 10px 8px; font-size: 14px; color: #333; border: none !important;">
+                                            <td style="padding: 7px 8px; font-size: 13px; color: #333; border: 1px solid #cbd5e1 !important;">
                                                 <span t-field="line.name"/>
                                             </td>
-                                            <td style="text-align: right; padding: 10px 8px; font-size: 14px; color: #333; border: none !important;">
+                                            <td style="text-align: right; padding: 7px 8px; font-size: 13px; color: #333; border: 1px solid #cbd5e1 !important;">
                                                 <span t-esc="abs(line.total)" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
                                             </td>
-                                            <td t-if="o.company_id.hao_allow_multi_payroll_currency" style="text-align: right; padding: 10px 8px; font-size: 14px; color: #333; border: none !important;">
+                                            <td t-if="o.company_id.hao_allow_multi_payroll_currency" style="text-align: right; padding: 7px 8px; font-size: 13px; color: #333; border: 1px solid #cbd5e1 !important;">
                                                 <span t-esc="abs(line.hao_secondary_total)" t-options='{"widget": "monetary", "display_currency": o.company_id.hao_secondary_payroll_currency_id}'/>
                                             </td>
                                         </tr>
                                     </t>
                                 </tbody>
-                            </table>
-                        </td>
-                    </tr>
-                    
-                    <!-- TOTALS ROW ALIGNED -->
-                    <tr>
-                        <td style="width: 50%; vertical-align: bottom; padding-right: 15px; border-right: 1px solid #e0e0e0 !important; border-top: none !important; border-bottom: none !important; border-left: none !important;">
-                            <table class="o_ignore_layout_styling" style="width: 100%; border-collapse: separate !important; border-spacing: 0 !important; border: none !important;">
-                                <tbody>
-                                    <tr>
-                                        <td style="padding: 15px 8px 5px 8px; font-weight: bold; font-size: 14px; color: #1a1a2e; text-align: left; border: none !important;">Total</td>
-                                        <td style="text-align: right; padding: 15px 8px 5px 8px; font-weight: bold; font-size: 14px; color: #1a1a2e; border: none !important;">
-                                            <span t-esc="total_earnings_usd" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
-                                        </td>
-                                        <td t-if="o.company_id.hao_allow_multi_payroll_currency" style="text-align: right; padding: 15px 8px 5px 8px; font-weight: bold; font-size: 14px; color: #1a1a2e; border: none !important;">
-                                            <span t-esc="total_earnings_zwg" t-options='{"widget": "monetary", "display_currency": o.company_id.hao_secondary_payroll_currency_id}'/>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </td>
-                        <td style="width: 50%; vertical-align: bottom; padding-left: 15px; border: none !important;">
-                            <table class="o_ignore_layout_styling" style="width: 100%; border-collapse: separate !important; border-spacing: 0 !important; border: none !important;">
-                                <tbody>
-                                    <tr>
-                                        <td style="padding: 15px 8px 5px 8px; font-weight: bold; font-size: 14px; color: #1a1a2e; text-align: left; border: none !important;">Total</td>
-                                        <td style="text-align: right; padding: 15px 8px 5px 8px; font-weight: bold; font-size: 14px; color: #1a1a2e; border: none !important;">
+                                <tfoot>
+                                    <tr style="background-color: #f8fafc;">
+                                        <td style="padding: 8px 8px; font-weight: bold; font-size: 13px; color: #1a1a2e; text-align: left; border: 1px solid #1a1a2e !important;">Total</td>
+                                        <td style="text-align: right; padding: 8px 8px; font-weight: bold; font-size: 13px; color: #1a1a2e; border: 1px solid #1a1a2e !important;">
                                             <span t-esc="total_deductions_usd" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
                                         </td>
-                                        <td t-if="o.company_id.hao_allow_multi_payroll_currency" style="text-align: right; padding: 15px 8px 5px 8px; font-weight: bold; font-size: 14px; color: #1a1a2e; border: none !important;">
+                                        <td t-if="o.company_id.hao_allow_multi_payroll_currency" style="text-align: right; padding: 8px 8px; font-weight: bold; font-size: 13px; color: #1a1a2e; border: 1px solid #1a1a2e !important;">
                                             <span t-esc="total_deductions_zwg" t-options='{"widget": "monetary", "display_currency": o.company_id.hao_secondary_payroll_currency_id}'/>
                                         </td>
                                     </tr>
-                                </tbody>
+                                </tfoot>
                             </table>
                         </td>
                     </tr>
@@ -267,24 +252,13 @@
             <div class="page showline-wrap" style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 12.5px; color: #111827; width: 100%; margin: 0; padding: 0;">
                 
                 <style>
-                    /* Showline V3: Eliminate phantom table cell borders and gridlines in wkhtmltopdf */
-                    .o_ignore_layout_styling,
-                    table.o_ignore_layout_styling,
-                    table.o_ignore_layout_styling tr,
-                    table.o_ignore_layout_styling th,
-                    table.o_ignore_layout_styling td {
+                    .o_header_table,
+                    table.o_header_table,
+                    table.o_header_table tr,
+                    table.o_header_table th,
+                    table.o_header_table td {
                         border-collapse: separate !important;
                         border-spacing: 0 !important;
-                        border: none !important;
-                        border-style: none !important;
-                    }
-                    table {
-                        border-collapse: separate !important;
-                        border-spacing: 0 !important;
-                        border: none !important;
-                        border-style: none !important;
-                    }
-                    table th, table td {
                         border: none !important;
                         border-style: none !important;
                     }
@@ -397,36 +371,36 @@
                 <div style="width: 100%; margin-bottom: 20px; overflow: hidden; clear: both;">
                     <!-- LEFT COLUMN: EARNINGS -->
                     <div style="float: left; width: 48%; box-sizing: border-box;">
-                        <table class="o_ignore_layout_styling" style="width: 100%; border-collapse: separate !important; border-spacing: 0 !important; border: none !important;">
+                        <table style="width: 100%; border-collapse: collapse; border: 1px solid #374151;">
                             <thead>
-                                <tr>
-                                    <th style="padding: 7px 8px; text-align: left; color: #1f2937; font-weight: 600; font-size: 12px; border-top: 1px solid #4b5563 !important; border-bottom: 1px solid #4b5563 !important; border-left: none !important; border-right: none !important; border-style: solid none !important; text-transform: uppercase;">Earnings</th>
-                                    <th style="padding: 7px 8px; text-align: right; color: #1f2937; font-weight: 600; font-size: 12px; border-top: 1px solid #4b5563 !important; border-bottom: 1px solid #4b5563 !important; border-left: none !important; border-right: none !important; border-style: solid none !important; text-transform: uppercase;">Amount (<span t-esc="o.currency_id.symbol or o.currency_id.name"/>)</th>
-                                    <th t-if="o.company_id.hao_allow_multi_payroll_currency" style="padding: 7px 8px; text-align: right; color: #1f2937; font-weight: 600; font-size: 12px; border-top: 1px solid #4b5563 !important; border-bottom: 1px solid #4b5563 !important; border-left: none !important; border-right: none !important; border-style: solid none !important; text-transform: uppercase;">Amount (<span t-esc="o.company_id.hao_secondary_payroll_currency_id.symbol or o.company_id.hao_secondary_payroll_currency_id.name"/>)</th>
+                                <tr style="background-color: #f3f4f6;">
+                                    <th style="padding: 7px 8px; text-align: left; color: #111827; font-weight: 700; font-size: 12px; border: 1px solid #374151 !important; text-transform: uppercase;">Earnings</th>
+                                    <th style="padding: 7px 8px; text-align: right; color: #111827; font-weight: 700; font-size: 12px; border: 1px solid #374151 !important; text-transform: uppercase;">Amount (<span t-esc="o.currency_id.symbol or o.currency_id.name"/>)</th>
+                                    <th t-if="o.company_id.hao_allow_multi_payroll_currency" style="padding: 7px 8px; text-align: right; color: #111827; font-weight: 700; font-size: 12px; border: 1px solid #374151 !important; text-transform: uppercase;">Amount (<span t-esc="o.company_id.hao_secondary_payroll_currency_id.symbol or o.company_id.hao_secondary_payroll_currency_id.name"/>)</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <t t-foreach="earnings_lines" t-as="line">
                                     <tr>
-                                        <td style="padding: 7px 8px; font-size: 12px; color: #1f2937; border-bottom: 1px solid #f1f5f9 !important; border-top: none !important; border-left: none !important; border-right: none !important; border-style: none none solid none !important;">
+                                        <td style="padding: 7px 8px; font-size: 12px; color: #1f2937; border: 1px solid #e5e7eb !important;">
                                             <span t-field="line.name"/>
                                         </td>
-                                        <td style="padding: 7px 8px; text-align: right; font-size: 12px; color: #111827; font-weight: 500; border-bottom: 1px solid #f1f5f9 !important; border-top: none !important; border-left: none !important; border-right: none !important; border-style: none none solid none !important;">
+                                        <td style="padding: 7px 8px; text-align: right; font-size: 12px; color: #111827; font-weight: 500; border: 1px solid #e5e7eb !important;">
                                             <span t-esc="line.total" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
                                         </td>
-                                        <td t-if="o.company_id.hao_allow_multi_payroll_currency" style="padding: 7px 8px; text-align: right; font-size: 12px; color: #111827; font-weight: 500; border-bottom: 1px solid #f1f5f9 !important; border-top: none !important; border-left: none !important; border-right: none !important; border-style: none none solid none !important;">
+                                        <td t-if="o.company_id.hao_allow_multi_payroll_currency" style="padding: 7px 8px; text-align: right; font-size: 12px; color: #111827; font-weight: 500; border: 1px solid #e5e7eb !important;">
                                             <span t-esc="line.hao_secondary_total" t-options='{"widget": "monetary", "display_currency": o.company_id.hao_secondary_payroll_currency_id}'/>
                                         </td>
                                     </tr>
                                 </t>
                             </tbody>
                             <tfoot>
-                                <tr>
-                                    <td style="padding: 8px 8px; font-weight: 700; font-size: 12.5px; color: #111827; border-top: 1px solid #4b5563 !important; border-bottom: 1px solid #4b5563 !important; border-left: none !important; border-right: none !important; border-style: solid none !important;">Total Earnings</td>
-                                    <td style="padding: 8px 8px; text-align: right; font-weight: 700; font-size: 12.5px; color: #111827; border-top: 1px solid #4b5563 !important; border-bottom: 1px solid #4b5563 !important; border-left: none !important; border-right: none !important; border-style: solid none !important;">
+                                <tr style="background-color: #f9fafb;">
+                                    <td style="padding: 8px 8px; font-weight: 700; font-size: 12.5px; color: #111827; border: 1px solid #374151 !important;">Total Earnings</td>
+                                    <td style="padding: 8px 8px; text-align: right; font-weight: 700; font-size: 12.5px; color: #111827; border: 1px solid #374151 !important;">
                                         <span t-esc="total_earnings_usd" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
                                     </td>
-                                    <td t-if="o.company_id.hao_allow_multi_payroll_currency" style="padding: 8px 8px; text-align: right; font-weight: 700; font-size: 12.5px; color: #111827; border-top: 1px solid #4b5563 !important; border-bottom: 1px solid #4b5563 !important; border-left: none !important; border-right: none !important; border-style: solid none !important;">
+                                    <td t-if="o.company_id.hao_allow_multi_payroll_currency" style="padding: 8px 8px; text-align: right; font-weight: 700; font-size: 12.5px; color: #111827; border: 1px solid #374151 !important;">
                                         <span t-esc="total_earnings_zwg" t-options='{"widget": "monetary", "display_currency": o.company_id.hao_secondary_payroll_currency_id}'/>
                                     </td>
                                 </tr>
@@ -436,36 +410,36 @@
 
                     <!-- RIGHT COLUMN: DEDUCTIONS -->
                     <div style="float: right; width: 48%; box-sizing: border-box;">
-                        <table class="o_ignore_layout_styling" style="width: 100%; border-collapse: separate !important; border-spacing: 0 !important; border: none !important;">
+                        <table style="width: 100%; border-collapse: collapse; border: 1px solid #374151;">
                             <thead>
-                                <tr>
-                                    <th style="padding: 7px 8px; text-align: left; color: #1f2937; font-weight: 600; font-size: 12px; border-top: 1px solid #4b5563 !important; border-bottom: 1px solid #4b5563 !important; border-left: none !important; border-right: none !important; border-style: solid none !important; text-transform: uppercase;">Deductions</th>
-                                    <th style="padding: 7px 8px; text-align: right; color: #1f2937; font-weight: 600; font-size: 12px; border-top: 1px solid #4b5563 !important; border-bottom: 1px solid #4b5563 !important; border-left: none !important; border-right: none !important; border-style: solid none !important; text-transform: uppercase;">Amount (<span t-esc="o.currency_id.symbol or o.currency_id.name"/>)</th>
-                                    <th t-if="o.company_id.hao_allow_multi_payroll_currency" style="padding: 7px 8px; text-align: right; color: #1f2937; font-weight: 600; font-size: 12px; border-top: 1px solid #4b5563 !important; border-bottom: 1px solid #4b5563 !important; border-left: none !important; border-right: none !important; border-style: solid none !important; text-transform: uppercase;">Amount (<span t-esc="o.company_id.hao_secondary_payroll_currency_id.symbol or o.company_id.hao_secondary_payroll_currency_id.name"/>)</th>
+                                <tr style="background-color: #f3f4f6;">
+                                    <th style="padding: 7px 8px; text-align: left; color: #111827; font-weight: 700; font-size: 12px; border: 1px solid #374151 !important; text-transform: uppercase;">Deductions</th>
+                                    <th style="padding: 7px 8px; text-align: right; color: #111827; font-weight: 700; font-size: 12px; border: 1px solid #374151 !important; text-transform: uppercase;">Amount (<span t-esc="o.currency_id.symbol or o.currency_id.name"/>)</th>
+                                    <th t-if="o.company_id.hao_allow_multi_payroll_currency" style="padding: 7px 8px; text-align: right; color: #111827; font-weight: 700; font-size: 12px; border: 1px solid #374151 !important; text-transform: uppercase;">Amount (<span t-esc="o.company_id.hao_secondary_payroll_currency_id.symbol or o.company_id.hao_secondary_payroll_currency_id.name"/>)</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <t t-foreach="deductions_lines" t-as="line">
                                     <tr>
-                                        <td style="padding: 7px 8px; font-size: 12px; color: #1f2937; border-bottom: 1px solid #f1f5f9 !important; border-top: none !important; border-left: none !important; border-right: none !important; border-style: none none solid none !important;">
+                                        <td style="padding: 7px 8px; font-size: 12px; color: #1f2937; border: 1px solid #e5e7eb !important;">
                                             <span t-field="line.name"/>
                                         </td>
-                                        <td style="padding: 7px 8px; text-align: right; font-size: 12px; color: #111827; font-weight: 500; border-bottom: 1px solid #f1f5f9 !important; border-top: none !important; border-left: none !important; border-right: none !important; border-style: none none solid none !important;">
+                                        <td style="padding: 7px 8px; text-align: right; font-size: 12px; color: #111827; font-weight: 500; border: 1px solid #e5e7eb !important;">
                                             <span t-esc="abs(line.total)" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
                                         </td>
-                                        <td t-if="o.company_id.hao_allow_multi_payroll_currency" style="padding: 7px 8px; text-align: right; font-size: 12px; color: #111827; font-weight: 500; border-bottom: 1px solid #f1f5f9 !important; border-top: none !important; border-left: none !important; border-right: none !important; border-style: none none solid none !important;">
+                                        <td t-if="o.company_id.hao_allow_multi_payroll_currency" style="padding: 7px 8px; text-align: right; font-size: 12px; color: #111827; font-weight: 500; border: 1px solid #e5e7eb !important;">
                                             <span t-esc="abs(line.hao_secondary_total)" t-options='{"widget": "monetary", "display_currency": o.company_id.hao_secondary_payroll_currency_id}'/>
                                         </td>
                                     </tr>
                                 </t>
                             </tbody>
                             <tfoot>
-                                <tr>
-                                    <td style="padding: 8px 8px; font-weight: 700; font-size: 12.5px; color: #111827; border-top: 1px solid #4b5563 !important; border-bottom: 1px solid #4b5563 !important; border-left: none !important; border-right: none !important; border-style: solid none !important;">Total Deductions</td>
-                                    <td style="padding: 8px 8px; text-align: right; font-weight: 700; font-size: 12.5px; color: #111827; border-top: 1px solid #4b5563 !important; border-bottom: 1px solid #4b5563 !important; border-left: none !important; border-right: none !important; border-style: solid none !important;">
+                                <tr style="background-color: #f9fafb;">
+                                    <td style="padding: 8px 8px; font-weight: 700; font-size: 12.5px; color: #111827; border: 1px solid #374151 !important;">Total Deductions</td>
+                                    <td style="padding: 8px 8px; text-align: right; font-weight: 700; font-size: 12.5px; color: #111827; border: 1px solid #374151 !important;">
                                         <span t-esc="total_deductions_usd" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
                                     </td>
-                                    <td t-if="o.company_id.hao_allow_multi_payroll_currency" style="padding: 8px 8px; text-align: right; font-weight: 700; font-size: 12.5px; color: #111827; border-top: 1px solid #4b5563 !important; border-bottom: 1px solid #4b5563 !important; border-left: none !important; border-right: none !important; border-style: solid none !important;">
+                                    <td t-if="o.company_id.hao_allow_multi_payroll_currency" style="padding: 8px 8px; text-align: right; font-weight: 700; font-size: 12.5px; color: #111827; border: 1px solid #374151 !important;">
                                         <span t-esc="total_deductions_zwg" t-options='{"widget": "monetary", "display_currency": o.company_id.hao_secondary_payroll_currency_id}'/>
                                     </td>
                                 </tr>
@@ -505,7 +479,7 @@
     <!-- 3. MAIN PAYSLIP REPORT DISPATCHER                            -->
     <!-- ============================================================ -->
     <template id="hr_payroll.report_payslip">
-        <t t-set="payslip_format" t-value="o.company_id.payslip_format or 'standard'"/>
+        <t t-set="payslip_format" t-value="'standard' if env.context.get('force_portrait') else (o.company_id.payslip_format or 'standard')"/>
         <t t-if="payslip_format == 'modern'">
             <t t-call="havano_payroll.report_payslip_modern"/>
         </t>
@@ -522,6 +496,7 @@
         <field name="model">hr.payslip</field>
         <field name="inherit_id" ref="hr_payroll.view_hr_payslip_form"/>
         <field name="arch" type="xml">
+
             <xpath expr="//group[@name='top']" position="after">
                 <group name="hao_leave_balances" string="Annual Leave Balances" class="alert alert-info">
                     <group>
@@ -629,6 +604,41 @@
             </xpath>
             <xpath expr="//field[@name='worked_days_line_ids']" position="before">
                 <field name="hao_allow_multi_payroll_currency" invisible="1"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="action_print_batch_payslips" model="ir.actions.server">
+        <field name="name">Print Payslips (2 per Page)</field>
+        <field name="model_id" ref="model_hr_payslip_run"/>
+        <field name="binding_model_id" ref="model_hr_payslip_run"/>
+        <field name="binding_view_types">form,list</field>
+        <field name="state">code</field>
+        <field name="code">
+action = records.action_print_payslips()
+        </field>
+    </record>
+
+    <record id="hr_payslip_run_form_inherit_havano" model="ir.ui.view">
+        <field name="name">hr.payslip.run.form.inherit.havano</field>
+        <field name="model">hr.payslip.run</field>
+        <field name="inherit_id" ref="hr_payroll.hr_payslip_run_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//group" position="before">
+                <div class="oe_button_box" name="button_box" style="margin-bottom: 10px;">
+                    <button name="action_print_payslips" type="object" string="Print Bulk Payslips (2 per Page)" class="oe_highlight btn-primary" icon="fa-print" invisible="not slip_ids"/>
+                </div>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="hr_payslip_run_view_kanban_inherit_havano" model="ir.ui.view">
+        <field name="name">hr.payslip.run.view.kanban.inherit.havano</field>
+        <field name="model">hr.payslip.run</field>
+        <field name="inherit_id" ref="hr_payroll.hr_payslip_run_view_kanban"/>
+        <field name="arch" type="xml">
+            <xpath expr="//button[@name='unlink']" position="before">
+                <button name="action_print_payslips" type="object" class="btn btn-secondary" string="Print Bulk Payslips" invisible="not slip_ids"/>
             </xpath>
         </field>
     </record>

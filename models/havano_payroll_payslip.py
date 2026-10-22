@@ -1,4 +1,5 @@
-from odoo import models, fields, api
+from odoo import models, fields, api, _
+from odoo.exceptions import UserError
 
 class HrPayslip(models.Model):
     _inherit = 'hr.payslip'
@@ -88,6 +89,10 @@ class HrPayslip(models.Model):
             slip.annual_leave_allocated = allocated
             slip.annual_leave_taken = taken
             slip.annual_leave_balance = balance
+
+    def action_print_payslip_portrait(self):
+        self.ensure_one()
+        return self.env.ref('hr_payroll.action_report_payslip').with_context(force_portrait=True).report_action(self)
 
     def action_payslip_done(self):
         res = super().action_payslip_done()
@@ -855,4 +860,15 @@ class HrLeaveAllocation(models.Model):
         ondelete='cascade',
         help='The payslip whose monthly payroll run generated this leave accrual.'
     )
+
+
+class HrPayslipRun(models.Model):
+    _inherit = 'hr.payslip.run'
+
+    def action_print_payslips(self):
+        self.ensure_one()
+        slips = self.slip_ids.filtered(lambda s: s.state != 'cancel')
+        if not slips:
+            raise UserError(_("There are no valid payslips to print for this batch."))
+        return self.env.ref('hr_payroll.action_report_payslip').report_action(slips)
 

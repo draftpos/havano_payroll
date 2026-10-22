@@ -129,6 +129,16 @@ class HrEmployee(models.Model):
         groups="hr_payroll.group_hr_payroll_user"
     )
 
+    hao_annual_leave_allocated = fields.Float(
+        string='Accrued Leave Allocation (Days)',
+        compute='_compute_hao_annual_leave_balance',
+        groups="hr_payroll.group_hr_payroll_user"
+    )
+    hao_annual_leave_taken = fields.Float(
+        string='Leave Taken (Days)',
+        compute='_compute_hao_annual_leave_balance',
+        groups="hr_payroll.group_hr_payroll_user"
+    )
     hao_annual_leave_balance = fields.Float(
         string='Annual Leave Balance (Days)',
         compute='_compute_hao_annual_leave_balance',
@@ -140,24 +150,30 @@ class HrEmployee(models.Model):
         for emp in self:
             emp.hao_basic_salary = emp.version_id.contract_wage if emp.version_id else 0.0
 
+    @api.depends('allocation_count')
     def _compute_hao_annual_leave_balance(self):
         leave_type = self.env.ref('havano_payroll.havano_annual_leave_type', raise_if_not_found=False)
+        if not leave_type:
+            leave_type = self.env['hr.leave.type'].sudo().search([('name', 'ilike', 'Annual Leave')], limit=1)
         for emp in self:
+            allocated = 0.0
+            taken = 0.0
             balance = 0.0
-            if leave_type and emp.id:
-                allocations = self.env['hr.leave.allocation'].search([
-                    ('employee_id', '=', emp.id),
-                    ('holiday_status_id', '=', leave_type.id),
-                    ('state', '=', 'validate'),
-                ])
+            if emp.id:
+                alloc_domain = [('employee_id', '=', emp.id), ('state', '=', 'validate')]
+                if leave_type:
+                    alloc_domain.append(('holiday_status_id', '=', leave_type.id))
+                allocations = self.env['hr.leave.allocation'].sudo().search(alloc_domain)
                 allocated = sum(allocations.mapped('number_of_days'))
-                leaves = self.env['hr.leave'].search([
-                    ('employee_id', '=', emp.id),
-                    ('holiday_status_id', '=', leave_type.id),
-                    ('state', '=', 'validate'),
-                ])
+
+                leave_domain = [('employee_id', '=', emp.id), ('state', '=', 'validate')]
+                if leave_type:
+                    leave_domain.append(('holiday_status_id', '=', leave_type.id))
+                leaves = self.env['hr.leave'].sudo().search(leave_domain)
                 taken = sum(leaves.mapped('number_of_days'))
                 balance = allocated - taken
+            emp.hao_annual_leave_allocated = allocated
+            emp.hao_annual_leave_taken = taken
             emp.hao_annual_leave_balance = balance
 
     # ==================== Leave Allocation & Currency Setup ====================
@@ -400,9 +416,9 @@ class HrEmployee(models.Model):
 
     def action_open_leave_allocations(self):
         return {
-            'name': 'Leaves',
+            'name': 'Annual Leave Allocations',
             'type': 'ir.actions.act_window',
-            'res_model': 'hr.leave',
+            'res_model': 'hr.leave.allocation',
             'view_mode': 'list,form',
             'domain': [('employee_id', '=', self.id)],
             'context': {'default_employee_id': self.id},

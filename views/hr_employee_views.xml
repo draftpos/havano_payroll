@@ -25,8 +25,7 @@
                         groups="hr_payroll.group_hr_payroll_user"
                         type="object" name="action_open_leave_allocations">
                     <div class="o_stat_info">
-                        <field name="hao_annual_leave_balance" class="o_stat_value"
-                               widget="float_time"/>
+                        <field name="hao_annual_leave_balance" class="o_stat_value"/>
                         <span class="o_stat_text">Leave Days</span>
                     </div>
                 </button>
