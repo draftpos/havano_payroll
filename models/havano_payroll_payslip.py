@@ -870,5 +870,8 @@ class HrPayslipRun(models.Model):
         slips = self.slip_ids.filtered(lambda s: s.state != 'cancel')
         if not slips:
             raise UserError(_("There are no valid payslips to print for this batch."))
-        return self.env.ref('hr_payroll.action_report_payslip').report_action(slips)
+        
+        report = self.env.ref('hr_payroll.action_report_payslip')
+        return report.with_context(force_portrait=True).report_action(slips)
+
 
