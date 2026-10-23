@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <data noupdate="0">
+    <data noupdate="1">
+
 
         <!-- Structure Type -->
         <record id="structure_type_havano" model="hr.payroll.structure.type">

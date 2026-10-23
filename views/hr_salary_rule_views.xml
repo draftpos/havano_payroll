@@ -78,4 +78,37 @@
             </xpath>
         </field>
     </record>
+
+    <record id="hr_payroll_structure_view_form_inherit_havano" model="ir.ui.view">
+        <field name="name">hr.payroll.structure.view.form.inherit.havano</field>
+        <field name="model">hr.payroll.structure</field>
+        <field name="inherit_id" ref="hr_payroll.view_hr_payroll_structure_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='name']" position="before">
+                <field name="active" invisible="1"/>
+            </xpath>
+            <xpath expr="//sheet" position="before">
+                <header>
+                    <button name="action_archive" type="object" string="Archive" invisible="not active" class="btn btn-secondary"/>
+                    <button name="action_unarchive" type="object" string="Unarchive" invisible="active" class="btn btn-primary"/>
+                </header>
+            </xpath>
+            <xpath expr="//div[hasclass('oe_title')]" position="before">
+                <div class="oe_button_box" name="button_box">
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active"/>
+                </div>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="hr_payroll_structure_view_list_inherit_havano" model="ir.ui.view">
+        <field name="name">hr.payroll.structure.view.list.inherit.havano</field>
+        <field name="model">hr.payroll.structure</field>
+        <field name="inherit_id" ref="hr_payroll.view_hr_payroll_structure_list_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='name']" position="after">
+                <field name="active" widget="boolean_toggle"/>
+            </xpath>
+        </field>
+    </record>
 </odoo>

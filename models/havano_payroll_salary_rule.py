@@ -110,3 +110,14 @@ class HrSalaryRule(models.Model):
     hao_tax_credit_elderly = fields.Float(string='Elderly Tax Credit (USD)', default=75.0, help="Fixed tax credit for elderly employees.")
     hao_tax_credit_blind = fields.Float(string='Blind Tax Credit (USD)', default=75.0, help="Fixed tax credit for blind employees.")
     hao_tax_credit_disabled = fields.Float(string='Disabled Tax Credit (USD)', default=75.0, help="Fixed tax credit for disabled employees.")
+
+
+class HrPayrollStructure(models.Model):
+    _inherit = 'hr.payroll.structure'
+
+    active = fields.Boolean(
+        string='Active',
+        default=True,
+        help="If unchecked, it will allow you to hide the salary structure without deleting it or having it recreated on updates."
+    )
+
