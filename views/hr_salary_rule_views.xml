@@ -82,7 +82,7 @@
     <record id="hr_payroll_structure_view_form_inherit_havano" model="ir.ui.view">
         <field name="name">hr.payroll.structure.view.form.inherit.havano</field>
         <field name="model">hr.payroll.structure</field>
-        <field name="inherit_id" ref="hr_payroll.view_hr_payroll_structure_form"/>
+        <field name="inherit_id" ref="hr_payroll.view_hr_employee_grade_form"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='name']" position="before">
                 <field name="active" invisible="1"/>
@@ -108,6 +108,17 @@
         <field name="arch" type="xml">
             <xpath expr="//field[@name='name']" position="after">
                 <field name="active" widget="boolean_toggle"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="hr_payroll_structure_view_search_inherit_havano" model="ir.ui.view">
+        <field name="name">hr.payroll.structure.view.search.inherit.havano</field>
+        <field name="model">hr.payroll.structure</field>
+        <field name="inherit_id" ref="hr_payroll.view_hr_payroll_structure_filter"/>
+        <field name="arch" type="xml">
+            <xpath expr="//search" position="inside">
+                <filter string="Archived" name="inactive" domain="[('active', '=', False)]"/>
             </xpath>
         </field>
     </record>
