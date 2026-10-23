@@ -3,6 +3,8 @@ from odoo import models, fields, api
 class HrSalaryRule(models.Model):
     _inherit = 'hr.salary.rule'
 
+    active = fields.Boolean(string='Active', default=True)
+
     hao_secondary_fixed_amount = fields.Float(
         string='Secondary Fixed Amount',
         digits='Payroll',
@@ -120,4 +122,10 @@ class HrPayrollStructure(models.Model):
         default=True,
         help="If unchecked, it will allow you to hide the salary structure without deleting it or having it recreated on updates."
     )
+
+    def _get_rules(self):
+        """Ensure only active salary rules are evaluated during payslip/payrun calculations."""
+        rules = super()._get_rules()
+        return rules.filtered(lambda r: r.active)
+
 
