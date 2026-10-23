@@ -107,7 +107,7 @@
         <field name="inherit_id" ref="hr_payroll.view_hr_payroll_structure_list_view"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='name']" position="after">
-                <field name="active" widget="boolean_toggle"/>
+                <field name="active" string="Active" widget="boolean_toggle" options="{'autosave': True}"/>
             </xpath>
         </field>
     </record>
