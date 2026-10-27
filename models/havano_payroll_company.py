@@ -54,3 +54,21 @@ class ResCompany(models.Model):
         default=1.25,
         help='Percentage of basic salary for WCIF contribution.'
     )
+
+    hao_leave_balance_from_joining_date = fields.Boolean(
+        string='Update Leave Balance from Joining Date',
+        default=False,
+        help='If enabled, employee annual leave balances (2.5 days/month) are automatically calculated and updated from their Joining Date (Contract Start Date), and auto-update whenever the joining date is edited.'
+    )
+
+    def write(self, vals):
+        res = super().write(vals)
+        if vals.get('hao_leave_balance_from_joining_date'):
+            for company in self:
+                if company.hao_leave_balance_from_joining_date:
+                    employees = self.env['hr.employee'].sudo().search([
+                        ('company_id', '=', company.id),
+                        ('active', '=', True),
+                    ])
+                    employees._sync_leave_allocation_from_joining_date()
+        return res

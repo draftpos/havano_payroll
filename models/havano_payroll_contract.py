@@ -256,6 +256,16 @@ class HrVersion(models.Model):
                         if hasattr(version, 'employee_id') and version.employee_id:
                             version.employee_id.hao_secondary_wage = sec
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        versions = super().create(vals_list)
+        for version in versions:
+            if hasattr(version, 'employee_id') and version.employee_id:
+                company = version.employee_id.company_id or version.company_id or self.env.company
+                if company.hao_leave_balance_from_joining_date:
+                    version.employee_id._sync_leave_allocation_from_joining_date()
+        return versions
+
     def write(self, vals):
         setup = vals.get('hao_currency_payment_setup') or (self[0].hao_currency_payment_setup if self else False)
         if setup == 'dual':
@@ -315,7 +325,19 @@ class HrVersion(models.Model):
             for version in self:
                 if hasattr(version, 'employee_id') and version.employee_id:
                     version.employee_id.hao_secondary_wage = 0.0
-        return super().write(vals)
+        res = super().write(vals)
+
+        joining_date_fields = {'contract_date_start', 'date_start', 'date_version'}
+        if joining_date_fields.intersection(vals.keys()):
+            new_join_date = vals.get('contract_date_start') or vals.get('date_start')
+            if isinstance(new_join_date, str):
+                new_join_date = fields.Date.from_string(new_join_date)
+            for version in self:
+                if hasattr(version, 'employee_id') and version.employee_id:
+                    company = version.employee_id.company_id or version.company_id or self.env.company
+                    if company.hao_leave_balance_from_joining_date:
+                        version.employee_id._sync_leave_allocation_from_joining_date(join_date=new_join_date)
+        return res
 
     hao_rule_split_ids = fields.One2many(
         'havano.contract.rule.split',
@@ -398,6 +420,3 @@ class HavanoContractRuleSplit(models.Model):
                     rec.secondary_amount = round(rem * rate, 2)
                     rec.primary_percentage = round((prim / tot) * 100.0, 2)
                     rec.secondary_percentage = round(100.0 - rec.primary_percentage, 2)
-
-
-

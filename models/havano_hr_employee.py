@@ -150,7 +150,167 @@ class HrEmployee(models.Model):
         for emp in self:
             emp.hao_basic_salary = emp.version_id.contract_wage if emp.version_id else 0.0
 
-    @api.depends('allocation_count')
+    def _get_joining_date(self, join_date_override=None):
+        self.ensure_one()
+        if join_date_override:
+            return join_date_override
+        return (
+            (self.version_id and getattr(self.version_id, 'contract_date_start', False))
+            or getattr(self, 'contract_date_start', False)
+            or getattr(self, 'first_contract_date', False)
+            or (self.version_id and getattr(self.version_id, 'date_start', False))
+        )
+
+    def _get_leave_accrual_cutoff_date(self, cutoff_date=None):
+        self.ensure_one()
+        if cutoff_date:
+            return cutoff_date
+        emp_id = self.id if isinstance(self.id, int) else (self._origin.id if self._origin else False)
+        if emp_id:
+            latest_slip = self.env['hr.payslip'].sudo().search([
+                ('employee_id', '=', emp_id),
+                ('state', '!=', 'cancel'),
+                ('date_to', '!=', False),
+            ], order='date_to desc', limit=1)
+            if latest_slip:
+                return latest_slip.date_to
+        company_id = self.company_id.id or self.env.company.id
+        latest_comp_slip = self.env['hr.payslip'].sudo().search([
+            ('company_id', '=', company_id),
+            ('state', '!=', 'cancel'),
+            ('date_to', '!=', False),
+        ], order='date_to desc', limit=1)
+        if latest_comp_slip:
+            return latest_comp_slip.date_to
+        latest_run = self.env['hr.payslip.run'].sudo().search([
+            ('company_id', '=', company_id),
+            ('date_end', '!=', False),
+        ], order='date_end desc', limit=1)
+        if latest_run:
+            return latest_run.date_end
+        return fields.Date.today()
+
+    def _calculate_joining_date_leave_days(self, join_date=None, cutoff_date=None):
+        self.ensure_one()
+        eff_join_date = self._get_joining_date(join_date_override=join_date)
+        if not eff_join_date:
+            return 0, 0.0, None, None
+        eff_cutoff_date = self._get_leave_accrual_cutoff_date(cutoff_date=cutoff_date)
+        if eff_join_date > eff_cutoff_date:
+            months_worked = 0
+        else:
+            months_worked = (eff_cutoff_date.year - eff_join_date.year) * 12 + (eff_cutoff_date.month - eff_join_date.month) + 1
+        accrued_days = max(months_worked, 0) * 2.5
+        return months_worked, accrued_days, eff_join_date, eff_cutoff_date
+
+    def _sync_leave_allocation_from_joining_date(self, join_date=None, cutoff_date=None, invalidate=True):
+        leave_type = self.env.ref('havano_payroll.havano_annual_leave_type', raise_if_not_found=False)
+        if not leave_type:
+            leave_type = self.env['hr.leave.type'].sudo().search([('name', 'ilike', 'Annual Leave')], limit=1)
+        if not leave_type:
+            return
+
+        updated_any = False
+        for emp in self:
+            company = emp.company_id or self.env.company
+            if not company.hao_leave_balance_from_joining_date:
+                continue
+            emp_id = emp.id if isinstance(emp.id, int) else (emp._origin.id if emp._origin else False)
+            if not emp_id:
+                continue
+
+            months_worked, accrued_days, eff_join_date, _ = emp._calculate_joining_date_leave_days(
+                join_date=join_date, cutoff_date=cutoff_date
+            )
+            if not eff_join_date:
+                continue
+
+            allocations = self.env['hr.leave.allocation'].sudo().search([
+                ('employee_id', '=', emp_id),
+                ('holiday_status_id', '=', leave_type.id),
+            ], order='id asc')
+
+            if accrued_days > 0:
+                if (
+                    len(allocations) == 1
+                    and allocations[0].state == 'validate'
+                    and round(allocations[0].number_of_days, 2) == round(accrued_days, 2)
+                    and allocations[0].date_from == eff_join_date
+                ):
+                    continue
+
+                alloc_name = f"Annual Leave Accrual ({months_worked} mos @ 2.5d/mo) - {emp.name}"
+                updated_any = True
+                if allocations:
+                    primary_alloc = allocations.filtered(lambda a: a.state == 'validate')[:1] or allocations[:1]
+                    extra_allocs = allocations - primary_alloc
+                    for extra in extra_allocs:
+                        try:
+                            if extra.state == 'validate':
+                                extra.action_refuse()
+                            extra.unlink()
+                        except Exception:
+                            self.env.cr.execute("DELETE FROM hr_leave_allocation WHERE id = %s", (extra.id,))
+                            self.env['hr.leave.allocation'].invalidate_model()
+
+                    try:
+                        primary_alloc.sudo().write({
+                            'name': alloc_name,
+                            'number_of_days': accrued_days,
+                            'date_from': eff_join_date,
+                        })
+                        if primary_alloc.state != 'validate':
+                            try:
+                                primary_alloc._action_validate()
+                            except Exception:
+                                try:
+                                    primary_alloc.action_approve()
+                                except Exception:
+                                    primary_alloc.sudo().write({'state': 'validate'})
+                    except Exception:
+                        self.env.cr.execute("""
+                            UPDATE hr_leave_allocation
+                            SET name = %s, number_of_days = %s, date_from = %s, state = 'validate'
+                            WHERE id = %s
+                        """, (alloc_name, accrued_days, eff_join_date, primary_alloc.id))
+                        self.env['hr.leave.allocation'].invalidate_model(['name', 'number_of_days', 'date_from', 'state'])
+                else:
+                    alloc = self.env['hr.leave.allocation'].sudo().create({
+                        'name': alloc_name,
+                        'employee_id': emp_id,
+                        'holiday_status_id': leave_type.id,
+                        'number_of_days': accrued_days,
+                        'allocation_type': 'regular',
+                        'date_from': eff_join_date,
+                    })
+                    try:
+                        alloc._action_validate()
+                    except Exception:
+                        try:
+                            alloc.action_approve()
+                        except Exception:
+                            self.env.cr.execute(
+                                "UPDATE hr_leave_allocation SET state = 'validate' WHERE id = %s",
+                                (alloc.id,)
+                            )
+                            self.env['hr.leave.allocation'].invalidate_model(['state'])
+            else:
+                if not allocations:
+                    continue
+                updated_any = True
+                for alloc in allocations:
+                    try:
+                        if alloc.state == 'validate':
+                            alloc.action_refuse()
+                        alloc.unlink()
+                    except Exception:
+                        self.env.cr.execute("DELETE FROM hr_leave_allocation WHERE id = %s", (alloc.id,))
+                        self.env['hr.leave.allocation'].invalidate_model()
+
+        if invalidate and updated_any:
+            self.invalidate_recordset(['hao_annual_leave_allocated', 'hao_annual_leave_taken', 'hao_annual_leave_balance'])
+
+    @api.depends('allocation_count', 'version_id')
     def _compute_hao_annual_leave_balance(self):
         leave_type = self.env.ref('havano_payroll.havano_annual_leave_type', raise_if_not_found=False)
         if not leave_type:
@@ -159,14 +319,25 @@ class HrEmployee(models.Model):
             allocated = 0.0
             taken = 0.0
             balance = 0.0
-            if emp.id:
-                alloc_domain = [('employee_id', '=', emp.id), ('state', '=', 'validate')]
-                if leave_type:
-                    alloc_domain.append(('holiday_status_id', '=', leave_type.id))
-                allocations = self.env['hr.leave.allocation'].sudo().search(alloc_domain)
-                allocated = sum(allocations.mapped('number_of_days'))
+            emp_id = emp.id if isinstance(emp.id, int) else (emp._origin.id if emp._origin else False)
+            company = emp.company_id or self.env.company
+            if emp_id:
+                if company.hao_leave_balance_from_joining_date:
+                    if isinstance(emp.id, int):
+                        emp._sync_leave_allocation_from_joining_date(invalidate=False)
+                    else:
+                        _, accrued_days, eff_join_date, _ = emp._calculate_joining_date_leave_days()
+                        if eff_join_date:
+                            allocated = accrued_days
 
-                leave_domain = [('employee_id', '=', emp.id), ('state', '=', 'validate')]
+                if not (company.hao_leave_balance_from_joining_date and not isinstance(emp.id, int)):
+                    alloc_domain = [('employee_id', '=', emp_id), ('state', '=', 'validate')]
+                    if leave_type:
+                        alloc_domain.append(('holiday_status_id', '=', leave_type.id))
+                    allocations = self.env['hr.leave.allocation'].sudo().search(alloc_domain)
+                    allocated = sum(allocations.mapped('number_of_days'))
+
+                leave_domain = [('employee_id', '=', emp_id), ('state', '=', 'validate')]
                 if leave_type:
                     leave_domain.append(('holiday_status_id', '=', leave_type.id))
                 leaves = self.env['hr.leave'].sudo().search(leave_domain)
@@ -356,8 +527,12 @@ class HrEmployee(models.Model):
                 elif emp.hao_dual_currency_method == 'percentage' and emp.version_id and emp.hao_secondary_percentage:
                     emp.version_id.hao_secondary_wage_percentage = emp.hao_secondary_percentage
 
-            # 1. Automatically allocate max Annual Leave Days when an employee is added
-            if leave_type:
+            # 1. If company setting "Update Leave Balance from Joining Date" is enabled, calculate from joining date
+            company = emp.company_id or self.env.company
+            if company.hao_leave_balance_from_joining_date:
+                emp._sync_leave_allocation_from_joining_date()
+            elif leave_type:
+                # Existing behavior: Automatically allocate max Annual Leave Days when an employee is added
                 existing_alloc = self.env['hr.leave.allocation'].sudo().search([
                     ('employee_id', '=', emp.id),
                     ('holiday_status_id', '=', leave_type.id),
@@ -402,7 +577,18 @@ class HrEmployee(models.Model):
             vals['hao_secondary_amount'] = 0.0
             vals['hao_secondary_percentage'] = 0.0
             vals['hao_primary_percentage'] = 100.0
-        return super().write(vals)
+        res = super().write(vals)
+
+        joining_date_fields = {'contract_date_start', 'first_contract_date', 'date_start', 'date_version', 'version_id'}
+        if joining_date_fields.intersection(vals.keys()):
+            new_join_date = vals.get('contract_date_start') or vals.get('first_contract_date') or vals.get('date_start')
+            if isinstance(new_join_date, str):
+                new_join_date = fields.Date.from_string(new_join_date)
+            for emp in self:
+                company = emp.company_id or self.env.company
+                if company.hao_leave_balance_from_joining_date:
+                    emp._sync_leave_allocation_from_joining_date(join_date=new_join_date)
+        return res
 
     def action_open_payslips(self):
         return {
@@ -415,6 +601,10 @@ class HrEmployee(models.Model):
         }
 
     def action_open_leave_allocations(self):
+        for emp in self:
+            company = emp.company_id or self.env.company
+            if company.hao_leave_balance_from_joining_date:
+                emp._sync_leave_allocation_from_joining_date()
         return {
             'name': 'Annual Leave Allocations',
             'type': 'ir.actions.act_window',

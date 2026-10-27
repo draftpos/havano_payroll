@@ -103,6 +103,9 @@ class HrPayslip(models.Model):
         for slip in self:
             if not leave_type or not slip.employee_id:
                 continue
+            if slip.company_id.hao_leave_balance_from_joining_date:
+                slip.employee_id._sync_leave_allocation_from_joining_date()
+                continue
             # Check if 2.5-day accrual allocation already exists for this payslip
             existing_alloc = slip.leave_allocation_id or self.env['hr.leave.allocation'].sudo().search([
                 ('payslip_id', '=', slip.id),
@@ -393,6 +396,8 @@ class HrPayslip(models.Model):
     def compute_sheet(self):
         res = super(HrPayslip, self).compute_sheet()
         for slip in self:
+            if slip.company_id.hao_leave_balance_from_joining_date and slip.employee_id:
+                slip.employee_id._sync_leave_allocation_from_joining_date()
             company_currency = slip.company_id.currency_id
             secondary_currency = slip.company_id.hao_secondary_payroll_currency_id
             allow_multi = slip.company_id.hao_allow_multi_payroll_currency

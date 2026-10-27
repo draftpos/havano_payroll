@@ -20,6 +20,7 @@
                         </group>
                         <group string="Payslip Settings">
                             <field name="payslip_format"/>
+                            <field name="hao_leave_balance_from_joining_date"/>
                         </group>
                     </group>
                     <group string="PAYE Tax Calculation Method">
@@ -46,4 +47,3 @@
         </field>
     </record>
 </odoo>
-

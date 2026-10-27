@@ -30,6 +30,11 @@
                         </div>
                     </setting>
 
+                    <!-- Leave Balance from Joining Date -->
+                    <setting string="Update Leave Balance from Joining Date" help="If enabled, employee annual leave balances (2.5 days per month) are automatically calculated and updated from their Joining Date (Contract Start Date), and auto-update whenever the joining date is edited.">
+                        <field name="hao_leave_balance_from_joining_date"/>
+                    </setting>
+
                     <!-- Statutory Contributions -->
                     <setting string="Statutory Contributions" help="Configure statutory contribution percentages.">
                         <div class="content-group mt16">

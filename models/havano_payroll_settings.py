@@ -58,3 +58,18 @@ class ResConfigSettings(models.TransientModel):
         default=75.00,
         help='Fixed tax credit for disabled employees'
     )
+
+    hao_leave_balance_from_joining_date = fields.Boolean(
+        related='company_id.hao_leave_balance_from_joining_date',
+        readonly=False
+    )
+
+    def set_values(self):
+        super().set_values()
+        for setting in self:
+            if setting.company_id and setting.hao_leave_balance_from_joining_date:
+                employees = self.env['hr.employee'].sudo().search([
+                    ('company_id', '=', setting.company_id.id),
+                    ('active', '=', True),
+                ])
+                employees._sync_leave_allocation_from_joining_date()
