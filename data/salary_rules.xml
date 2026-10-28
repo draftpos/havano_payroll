@@ -648,58 +648,20 @@ result = cil_days * (basic / 26.0)
             <field name="category_id" ref="hr_payroll.DED"/>
             <field name="struct_id" ref="structure_havano_base"/>
             <field name="hao_rent_percentage">5.0</field>
+            <field name="hao_use_both_currencies">True</field>
             <field name="amount_select">code</field>
             <field name="amount_python_compute">
 # ============================================================
 # RENT DEDUCTION CALCULATION
-# Calculated as a percentage of Housing Allowance.
+# Calculated as a percentage of Basic Salary.
 # Configured directly on this Rent salary rule (hao_rent_percentage).
+# Supports single currency and multi-currency (both currencies or 1).
 # ============================================================
 
+basic = categories['BASIC'] if 'BASIC' in categories else (payslip.paid_amount or 0.0)
 rent_rule = payslip.env['hr.salary.rule'].search([('code', '=', 'RENT')], limit=1)
-rent_pct = rent_rule.hao_rent_percentage if rent_rule and rent_rule.hao_rent_percentage else 5.0
-
-hou_amt = 0.0
-
-# 1. Check computed rule results
-if 'HOU' in result_rules:
-    hou_amt = result_rules['HOU']['total']
-elif 'HOUSING' in result_rules:
-    hou_amt = result_rules['HOUSING']['total']
-else:
-    for r_code, r_val in result_rules.items():
-        if 'HOU' in r_code.upper() and r_code.upper() not in ('RENT',):
-            hou_amt = r_val['total']
-            break
-
-# 2. Check payslip lines
-if not hou_amt:
-    for line in payslip.line_ids:
-        if line.category_id.code == 'ALW' and ('HOU' in line.code.upper() or 'HOUS' in (line.name or '').upper()):
-            hou_amt = line.total
-            break
-
-# 3. Check contract rule splits
-if not hou_amt and payslip.version_id:
-    for split in payslip.version_id.hao_rule_split_ids:
-        if 'HOU' in (split.salary_rule_id.code or '').upper() or 'HOUS' in (split.salary_rule_id.name or '').upper():
-            hou_amt = split.total_amount
-            break
-
-# 4. Check payslip inputs
-if not hou_amt:
-    for inp in payslip.input_line_ids:
-        code = (inp.input_type_id.code or '').upper()
-        name = (inp.name or '').upper()
-        type_name = (inp.input_type_id.name or '').upper()
-        if 'HOU' in code or 'HOUS' in code or 'HOUS' in name or 'HOUS' in type_name:
-            hou_amt = inp.amount
-            break
-
-if hou_amt and rent_pct:
-    result = - abs(hou_amt * (rent_pct / 100.0))
-else:
-    result = 0.0
+pct = rent_rule.hao_rent_percentage if rent_rule and rent_rule.hao_rent_percentage else 5.0
+result = - (basic * (pct / 100.0))
             </field>
         </record>
 

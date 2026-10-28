@@ -34,6 +34,12 @@ class HrSalaryRule(models.Model):
             ('secondary_only', f'Secondary Currency ({secondary}) Only')
         ]
 
+    hao_use_both_currencies = fields.Boolean(
+        string='Use Both Currencies',
+        default=True,
+        help="If checked, this rule applies to both currencies. If unchecked, it only applies to 1 currency (Base Currency)."
+    )
+
     hao_currency_application = fields.Selection(
         selection='_get_currency_application_selection',
         string='Currency Application',
@@ -41,13 +47,20 @@ class HrSalaryRule(models.Model):
         help="Determine which currencies this rule applies to."
     )
 
+    @api.onchange('hao_use_both_currencies')
+    def _onchange_hao_use_both_currencies(self):
+        for rule in self:
+            rule.hao_currency_application = 'both' if rule.hao_use_both_currencies else 'base_only'
 
-
+    @api.onchange('hao_currency_application')
+    def _onchange_hao_currency_application(self):
+        for rule in self:
+            rule.hao_use_both_currencies = (rule.hao_currency_application == 'both')
 
     hao_rent_percentage = fields.Float(
         string='Rent Deduction Percentage (%)',
         default=5.0,
-        help="Percentage of Housing Allowance deducted for Rent."
+        help="Percentage of Basic Salary deducted for Rent."
     )
 
     hao_aids_levy_pct = fields.Float(
@@ -142,6 +155,11 @@ class HrPayrollStructure(models.Model):
             ADD COLUMN IF NOT EXISTS hao_rent_percentage double precision DEFAULT 5.0;
             ALTER TABLE hr_salary_rule
             ADD COLUMN IF NOT EXISTS hao_rent_percentage double precision DEFAULT 5.0;
+            ALTER TABLE hr_salary_rule
+            ADD COLUMN IF NOT EXISTS hao_use_both_currencies boolean DEFAULT true;
+            UPDATE hr_salary_rule
+            SET hao_use_both_currencies = true
+            WHERE hao_use_both_currencies IS NULL;
             UPDATE hr_salary_rule
             SET hao_rent_percentage = 5.0
             WHERE code = 'RENT' AND (hao_rent_percentage IS NULL OR hao_rent_percentage = 0.0);
@@ -167,46 +185,10 @@ result = hou_amt"""
 
         rent_rule = self.env['hr.salary.rule'].search([('code', '=', 'RENT')], limit=1)
         if rent_rule:
-            rent_rule.amount_python_compute = """rent_rule = payslip.env['hr.salary.rule'].search([('code', '=', 'RENT')], limit=1)
-rent_pct = rent_rule.hao_rent_percentage if rent_rule and rent_rule.hao_rent_percentage else 5.0
-
-hou_amt = 0.0
-
-if 'HOU' in result_rules:
-    hou_amt = result_rules['HOU']['total']
-elif 'HOUSING' in result_rules:
-    hou_amt = result_rules['HOUSING']['total']
-else:
-    for r_code, r_val in result_rules.items():
-        if 'HOU' in r_code.upper() and r_code.upper() not in ('RENT',):
-            hou_amt = r_val['total']
-            break
-
-if not hou_amt:
-    for line in payslip.line_ids:
-        if line.category_id.code == 'ALW' and ('HOU' in line.code.upper() or 'HOUS' in (line.name or '').upper()):
-            hou_amt = line.total
-            break
-
-if not hou_amt and payslip.version_id:
-    for split in payslip.version_id.hao_rule_split_ids:
-        if 'HOU' in (split.salary_rule_id.code or '').upper() or 'HOUS' in (split.salary_rule_id.name or '').upper():
-            hou_amt = split.total_amount
-            break
-
-if not hou_amt:
-    for inp in payslip.input_line_ids:
-        code = (inp.input_type_id.code or '').upper()
-        name = (inp.name or '').upper()
-        type_name = (inp.input_type_id.name or '').upper()
-        if 'HOU' in code or 'HOUS' in code or 'HOUS' in name or 'HOUS' in type_name:
-            hou_amt = inp.amount
-            break
-
-if hou_amt and rent_pct:
-    result = - abs(hou_amt * (rent_pct / 100.0))
-else:
-    result = 0.0"""
+            rent_rule.amount_python_compute = """basic = categories['BASIC'] if 'BASIC' in categories else (payslip.paid_amount or 0.0)
+rent_rule = payslip.env['hr.salary.rule'].search([('code', '=', 'RENT')], limit=1)
+pct = rent_rule.hao_rent_percentage if rent_rule and rent_rule.hao_rent_percentage else 5.0
+result = - (basic * (pct / 100.0))"""
         return super()._register_hook()
 
     def _get_rules(self):

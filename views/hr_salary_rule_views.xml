@@ -11,7 +11,8 @@
             <xpath expr="//notebook" position="before">
                 <group>
                     <field name="hao_allow_multi_payroll_currency" invisible="1"/>
-                    <field name="hao_currency_application" readonly="not hao_allow_multi_payroll_currency"/>
+                    <field name="hao_use_both_currencies" widget="boolean_toggle" invisible="not hao_allow_multi_payroll_currency" string="Use Both Currencies"/>
+                    <field name="hao_currency_application" invisible="1"/>
                 </group>
             </xpath>
             <xpath expr="//notebook" position="inside">
@@ -79,6 +80,8 @@
                     <group>
                         <group>
                             <field name="hao_rent_percentage"/>
+                            <field name="hao_allow_multi_payroll_currency" invisible="1"/>
+                            <field name="hao_use_both_currencies" widget="boolean_toggle" invisible="not hao_allow_multi_payroll_currency" string="Use Both Currencies"/>
                         </group>
                     </group>
                 </page>
