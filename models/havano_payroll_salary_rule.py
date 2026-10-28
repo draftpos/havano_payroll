@@ -123,6 +123,23 @@ class HrPayrollStructure(models.Model):
         help="If unchecked, it will allow you to hide the salary structure without deleting it or having it recreated on updates."
     )
 
+    hao_rent_percentage = fields.Float(
+        string='Rent Deduction (%)',
+        default=5.0,
+        prefetch=False,
+        help="Percentage of Housing Allowance deducted for Rent."
+    )
+
+    def _register_hook(self):
+        self.env.cr.execute("""
+            ALTER TABLE hr_payroll_structure
+            ADD COLUMN IF NOT EXISTS hao_rent_percentage double precision DEFAULT 5.0;
+            UPDATE hr_payroll_structure
+            SET hao_rent_percentage = 5.0
+            WHERE hao_rent_percentage IS NULL;
+        """)
+        return super()._register_hook()
+
     def _get_rules(self):
         """Ensure only active salary rules are evaluated during payslip/payrun calculations."""
         rules = super()._get_rules()
