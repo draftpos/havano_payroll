@@ -138,6 +138,67 @@ class HrPayrollStructure(models.Model):
             SET hao_rent_percentage = 5.0
             WHERE hao_rent_percentage IS NULL;
         """)
+        hou_rule = self.env['hr.salary.rule'].search([('code', '=', 'HOU')], limit=1)
+        if hou_rule and 'hasattr' in (hou_rule.amount_python_compute or ''):
+            hou_rule.amount_python_compute = """hou_amt = 0.0
+version = payslip.version_id
+if version:
+    for split in version.hao_rule_split_ids:
+        if split.salary_rule_id.code == 'HOU' or 'housing' in (split.salary_rule_id.name or '').lower():
+            hou_amt += split.total_amount
+
+if not hou_amt:
+    for line in payslip.input_line_ids:
+        c = (line.input_type_id.code or '').upper()
+        n = (line.name or '').lower()
+        tn = (line.input_type_id.name or '').lower()
+        if c in ('HOU', 'HOUSING') or 'housing' in n or 'housing' in tn:
+            hou_amt += line.amount
+
+result = hou_amt"""
+
+        rent_rule = self.env['hr.salary.rule'].search([('code', '=', 'RENT')], limit=1)
+        if rent_rule and 'hasattr' in (rent_rule.amount_python_compute or ''):
+            rent_rule.amount_python_compute = """struct = payslip.struct_id
+rent_pct = struct.hao_rent_percentage if struct else 5.0
+
+hou_amt = 0.0
+
+if 'HOU' in result_rules:
+    hou_amt = result_rules['HOU']['total']
+elif 'HOUSING' in result_rules:
+    hou_amt = result_rules['HOUSING']['total']
+else:
+    for r_code, r_val in result_rules.items():
+        if 'HOU' in r_code.upper() and r_code.upper() not in ('RENT',):
+            hou_amt = r_val['total']
+            break
+
+if not hou_amt:
+    for line in payslip.line_ids:
+        if line.category_id.code == 'ALW' and ('HOU' in line.code.upper() or 'HOUS' in (line.name or '').upper()):
+            hou_amt = line.total
+            break
+
+if not hou_amt and payslip.version_id:
+    for split in payslip.version_id.hao_rule_split_ids:
+        if 'HOU' in (split.salary_rule_id.code or '').upper() or 'HOUS' in (split.salary_rule_id.name or '').upper():
+            hou_amt = split.total_amount
+            break
+
+if not hou_amt:
+    for inp in payslip.input_line_ids:
+        code = (inp.input_type_id.code or '').upper()
+        name = (inp.name or '').upper()
+        type_name = (inp.input_type_id.name or '').upper()
+        if 'HOU' in code or 'HOUS' in code or 'HOUS' in name or 'HOUS' in type_name:
+            hou_amt = inp.amount
+            break
+
+if hou_amt and rent_pct:
+    result = - abs(hou_amt * (rent_pct / 100.0))
+else:
+    result = 0.0"""
         return super()._register_hook()
 
     def _get_rules(self):
