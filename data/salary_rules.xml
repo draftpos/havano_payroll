@@ -32,12 +32,12 @@
             <field name="amount_python_compute">
 # Housing allowance from contract rule split, or payslip inputs
 hou_amt = 0.0
-if payslip.version_id and hasattr(payslip.version_id, 'hao_rule_split_ids'):
+if payslip.version_id:
     for split in payslip.version_id.hao_rule_split_ids:
         if split.salary_rule_id.code == 'HOU' or 'housing' in (split.salary_rule_id.name or '').lower():
             hou_amt += split.total_amount
 
-if not hou_amt and hasattr(payslip, 'input_line_ids'):
+if not hou_amt:
     for line in payslip.input_line_ids:
         c = (line.input_type_id.code or '').upper()
         n = (line.name or '').lower()
@@ -674,21 +674,21 @@ else:
             break
 
 # 2. Check payslip lines
-if not hou_amt and hasattr(payslip, 'line_ids'):
+if not hou_amt:
     for line in payslip.line_ids:
         if line.category_id.code == 'ALW' and ('HOU' in line.code.upper() or 'HOUS' in (line.name or '').upper()):
             hou_amt = line.total
             break
 
 # 3. Check contract rule splits
-if not hou_amt and payslip.version_id and hasattr(payslip.version_id, 'hao_rule_split_ids'):
+if not hou_amt and payslip.version_id:
     for split in payslip.version_id.hao_rule_split_ids:
         if 'HOU' in (split.salary_rule_id.code or '').upper() or 'HOUS' in (split.salary_rule_id.name or '').upper():
             hou_amt = split.total_amount
             break
 
 # 4. Check payslip inputs
-if not hou_amt and hasattr(payslip, 'input_line_ids'):
+if not hou_amt:
     for inp in payslip.input_line_ids:
         code = (inp.input_type_id.code or '').upper()
         name = (inp.name or '').upper()
