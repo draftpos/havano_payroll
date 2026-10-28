@@ -419,6 +419,25 @@ class HrPayslip(models.Model):
                     # If multi currency is off, everything computes normally on the USD base ledger!
                     continue
 
+                if line.salary_rule_id.code == 'RENT':
+                    prim_amt = getattr(slip.version_id, 'hao_primary_amount', 0.0) or getattr(slip.employee_id, 'hao_primary_amount', 0.0) or abs(line.total) or 0.0
+                    sec_amt = getattr(slip.version_id, 'hao_secondary_amount', 0.0) or getattr(slip.employee_id, 'hao_secondary_amount', 0.0) or getattr(slip.employee_id, 'hao_secondary_wage', 0.0)
+                    rent_pct = getattr(line.salary_rule_id, 'hao_rent_percentage', 5.0) or 5.0
+                    prim_rent = - round(prim_amt * (rent_pct / 100.0), 2)
+                    line.amount = prim_rent
+                    line.total = prim_rent
+
+                    use_both = getattr(line.salary_rule_id, 'hao_use_both_currencies', True) and getattr(line.salary_rule_id, 'hao_currency_application', 'both') == 'both'
+                    if use_both and sec_amt > 0:
+                        sec_rent = - round(sec_amt * (rent_pct / 100.0), 2)
+                        line.hao_secondary_amount = sec_rent
+                        line.hao_secondary_total = sec_rent
+                    else:
+                        line.hao_secondary_amount = 0.0
+                        line.hao_secondary_total = 0.0
+                    line.hao_is_manual_secondary = True
+                    continue
+
                 is_secondary_only = getattr(line.salary_rule_id, 'hao_currency_application', 'both') == 'secondary_only'
                 is_base_only = getattr(line.salary_rule_id, 'hao_currency_application', 'both') == 'base_only'
                 
@@ -505,21 +524,7 @@ class HrPayslip(models.Model):
                         line.hao_secondary_amount = sec_amt
                         line.hao_secondary_total = sec_amt
                         line.hao_is_manual_secondary = True
-                    elif line.salary_rule_id.code == 'RENT':
-                        rent_pct = getattr(line.salary_rule_id, 'hao_rent_percentage', 5.0) or 5.0
-                        prim_rent = - round(prim_amt * (rent_pct / 100.0), 2)
-                        line.amount = prim_rent
-                        line.total = prim_rent
 
-                        use_both = getattr(line.salary_rule_id, 'hao_use_both_currencies', True) and getattr(line.salary_rule_id, 'hao_currency_application', 'both') == 'both'
-                        if use_both and sec_amt > 0:
-                            sec_rent = - round(sec_amt * (rent_pct / 100.0), 2)
-                            line.hao_secondary_amount = sec_rent
-                            line.hao_secondary_total = sec_rent
-                        else:
-                            line.hao_secondary_amount = 0.0
-                            line.hao_secondary_total = 0.0
-                        line.hao_is_manual_secondary = True
                     else:
                         orig_tot = line.total
                         orig_amt = line.amount
