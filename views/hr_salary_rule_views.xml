@@ -75,6 +75,13 @@
                         </group>
                     </group>
                 </page>
+                <page string="Rent Settings" name="rent_settings" invisible="code != 'RENT'">
+                    <group>
+                        <group>
+                            <field name="hao_rent_percentage"/>
+                        </group>
+                    </group>
+                </page>
             </xpath>
         </field>
     </record>
@@ -84,9 +91,6 @@
         <field name="model">hr.payroll.structure</field>
         <field name="inherit_id" ref="hr_payroll.view_hr_employee_grade_form"/>
         <field name="arch" type="xml">
-            <xpath expr="//field[@name='type_id']" position="after">
-                <field name="hao_rent_percentage"/>
-            </xpath>
             <xpath expr="//field[@name='rule_ids']/list/field[@name='name']" position="before">
                 <field name="active" string="Active" widget="boolean_toggle" options="{'autosave': True}"/>
             </xpath>

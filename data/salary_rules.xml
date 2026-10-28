@@ -13,7 +13,6 @@
         <record id="structure_havano_base" model="hr.payroll.structure">
             <field name="name">Havano Base Structure</field>
             <field name="type_id" ref="structure_type_havano"/>
-            <field name="hao_rent_percentage">5.0</field>
         </record>
 
         <!-- Set the structure type's default structure -->
@@ -648,17 +647,17 @@ result = cil_days * (basic / 26.0)
             <field name="sequence">118</field>
             <field name="category_id" ref="hr_payroll.DED"/>
             <field name="struct_id" ref="structure_havano_base"/>
+            <field name="hao_rent_percentage">5.0</field>
             <field name="amount_select">code</field>
             <field name="amount_python_compute">
 # ============================================================
 # RENT DEDUCTION CALCULATION
 # Calculated as a percentage of Housing Allowance.
-# The percentage is configured dynamically on the salary structure
-# (payslip.struct_id.hao_rent_percentage) to avoid hardcoding.
+# Configured directly on this Rent salary rule (hao_rent_percentage).
 # ============================================================
 
-struct = payslip.struct_id
-rent_pct = struct.hao_rent_percentage if struct else 5.0
+rent_rule = payslip.env['hr.salary.rule'].search([('code', '=', 'RENT')], limit=1)
+rent_pct = rent_rule.hao_rent_percentage if rent_rule and rent_rule.hao_rent_percentage else 5.0
 
 hou_amt = 0.0
 

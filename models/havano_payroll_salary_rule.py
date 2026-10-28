@@ -44,6 +44,12 @@ class HrSalaryRule(models.Model):
 
 
 
+    hao_rent_percentage = fields.Float(
+        string='Rent Deduction Percentage (%)',
+        default=5.0,
+        help="Percentage of Housing Allowance deducted for Rent."
+    )
+
     hao_aids_levy_pct = fields.Float(
         string='AIDS Levy Percentage (%)',
         default=3.0,
@@ -134,9 +140,11 @@ class HrPayrollStructure(models.Model):
         self.env.cr.execute("""
             ALTER TABLE hr_payroll_structure
             ADD COLUMN IF NOT EXISTS hao_rent_percentage double precision DEFAULT 5.0;
-            UPDATE hr_payroll_structure
+            ALTER TABLE hr_salary_rule
+            ADD COLUMN IF NOT EXISTS hao_rent_percentage double precision DEFAULT 5.0;
+            UPDATE hr_salary_rule
             SET hao_rent_percentage = 5.0
-            WHERE hao_rent_percentage IS NULL;
+            WHERE code = 'RENT' AND (hao_rent_percentage IS NULL OR hao_rent_percentage = 0.0);
         """)
         hou_rule = self.env['hr.salary.rule'].search([('code', '=', 'HOU')], limit=1)
         if hou_rule and 'hasattr' in (hou_rule.amount_python_compute or ''):
@@ -158,9 +166,9 @@ if not hou_amt:
 result = hou_amt"""
 
         rent_rule = self.env['hr.salary.rule'].search([('code', '=', 'RENT')], limit=1)
-        if rent_rule and 'hasattr' in (rent_rule.amount_python_compute or ''):
-            rent_rule.amount_python_compute = """struct = payslip.struct_id
-rent_pct = struct.hao_rent_percentage if struct else 5.0
+        if rent_rule:
+            rent_rule.amount_python_compute = """rent_rule = payslip.env['hr.salary.rule'].search([('code', '=', 'RENT')], limit=1)
+rent_pct = rent_rule.hao_rent_percentage if rent_rule and rent_rule.hao_rent_percentage else 5.0
 
 hou_amt = 0.0
 
