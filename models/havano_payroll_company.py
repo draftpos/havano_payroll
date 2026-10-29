@@ -65,7 +65,8 @@ class ResCompany(models.Model):
     def _register_hook(self):
         self.env.cr.execute("""
             ALTER TABLE res_company
-            ADD COLUMN IF NOT EXISTS hao_leave_balance_from_joining_date boolean DEFAULT false
+            ADD COLUMN IF NOT EXISTS hao_leave_balance_from_joining_date boolean DEFAULT false;
+            UPDATE res_company SET hao_leave_balance_from_joining_date = false WHERE hao_leave_balance_from_joining_date IS NULL;
         """)
         return super()._register_hook()
 

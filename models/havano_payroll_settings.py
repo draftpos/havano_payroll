@@ -61,7 +61,8 @@ class ResConfigSettings(models.TransientModel):
 
     hao_leave_balance_from_joining_date = fields.Boolean(
         related='company_id.hao_leave_balance_from_joining_date',
-        readonly=False
+        readonly=False,
+        default=False
     )
 
     def set_values(self):
