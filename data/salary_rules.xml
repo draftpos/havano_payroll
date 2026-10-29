@@ -48,6 +48,35 @@ result = hou_amt
             </field>
         </record>
 
+        <!-- Transport Allowance -->
+        <record id="rule_transport_allowance" model="hr.salary.rule">
+            <field name="name">Transport Allowance</field>
+            <field name="code">TRA</field>
+            <field name="sequence">56</field>
+            <field name="category_id" ref="hr_payroll.ALW"/>
+            <field name="struct_id" ref="structure_havano_base"/>
+            <field name="hao_use_both_currencies">True</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">
+# Transport allowance from contract rule split, or payslip inputs
+tra_amt = 0.0
+if payslip.version_id:
+    for split in payslip.version_id.hao_rule_split_ids:
+        if split.salary_rule_id.code in ('TRA', 'TRANS') or 'transport' in (split.salary_rule_id.name or '').lower():
+            tra_amt += split.total_amount
+
+if not tra_amt:
+    for line in payslip.input_line_ids:
+        c = (line.input_type_id.code or '').upper()
+        n = (line.name or '').lower()
+        tn = (line.input_type_id.name or '').lower()
+        if c in ('TRA', 'TRANS', 'TRANSPORT') or 'transport' in n or 'transport' in tn:
+            tra_amt += line.amount
+
+result = tra_amt
+            </field>
+        </record>
+
         <record id="rule_basic_salary" model="hr.salary.rule">
             <field name="name">Basic Salary</field>
             <field name="code">BASIC</field>
@@ -414,6 +443,24 @@ result = - (basic * (pct / 100.0))
             <field name="amount_python_compute">
 basic = categories['BASIC'] if 'BASIC' in categories else 0.0
 rule_record = payslip.env['hr.salary.rule'].search([('code', '=', 'ZFBAWU')], limit=1)
+pct = rule_record.hao_rule_percentage if rule_record and rule_record.hao_rule_percentage else 4.0
+result = - (basic * (pct / 100.0))
+            </field>
+        </record>
+
+        <!-- National Education Union of Zimbabwe (NEUZ) -->
+        <record id="rule_neuz" model="hr.salary.rule">
+            <field name="name">NEUZ</field>
+            <field name="code">NEUZ</field>
+            <field name="sequence">113</field>
+            <field name="category_id" ref="hr_payroll.DED"/>
+            <field name="struct_id" ref="structure_havano_base"/>
+            <field name="hao_rule_percentage">4.0</field>
+            <field name="hao_use_both_currencies">True</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">
+basic = categories['BASIC'] if 'BASIC' in categories else (payslip.paid_amount or 0.0)
+rule_record = payslip.env['hr.salary.rule'].search([('code', '=', 'NEUZ')], limit=1)
 pct = rule_record.hao_rule_percentage if rule_record and rule_record.hao_rule_percentage else 4.0
 result = - (basic * (pct / 100.0))
             </field>

@@ -48,7 +48,7 @@
                         </group>
                     </group>
                 </page>
-                <page string="Statutory Percentage Setting" name="statutory_settings" invisible="code not in ('LAPF_EMP', 'LAPF_COMP', 'UFAWUZ', 'ZFBAWU')">
+                <page string="Statutory Percentage Setting" name="statutory_settings" invisible="code not in ('LAPF_EMP', 'LAPF_COMP', 'UFAWUZ', 'ZFBAWU', 'NEUZ')">
                     <group>
                         <group>
                             <field name="hao_rule_percentage"/>

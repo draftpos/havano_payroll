@@ -189,6 +189,15 @@ result = hou_amt"""
 rent_rule = payslip.env['hr.salary.rule'].search([('code', '=', 'RENT')], limit=1)
 pct = rent_rule.hao_rent_percentage if rent_rule and rent_rule.hao_rent_percentage else 5.0
 result = - (basic * (pct / 100.0))"""
+
+        neuz_rule = self.env['hr.salary.rule'].search([('code', '=', 'NEUZ')], limit=1)
+        if neuz_rule:
+            if not neuz_rule.hao_rule_percentage:
+                neuz_rule.hao_rule_percentage = 4.0
+            neuz_rule.amount_python_compute = """basic = categories['BASIC'] if 'BASIC' in categories else (payslip.paid_amount or 0.0)
+rule_record = payslip.env['hr.salary.rule'].search([('code', '=', 'NEUZ')], limit=1)
+pct = rule_record.hao_rule_percentage if rule_record and rule_record.hao_rule_percentage else 4.0
+result = - (basic * (pct / 100.0))"""
         return super()._register_hook()
 
     def _get_rules(self):
