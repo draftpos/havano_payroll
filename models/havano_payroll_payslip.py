@@ -419,22 +419,64 @@ class HrPayslip(models.Model):
                     # If multi currency is off, everything computes normally on the USD base ledger!
                     continue
 
-                if line.salary_rule_id.code in ('RENT', 'NEUZ'):
+                # Common Percentage Deductions & Statutory Deductions
+                # (RENT, NEUZ, NSSA, NEC, UFAWUZ, ZFBAWU, LAPF_EMP)
+                rule_code = line.salary_rule_id.code
+                if rule_code in ('RENT', 'NEUZ', 'NSSA', 'NSSA_COMP', 'NEC', 'NEC_COMP', 'UFAWUZ', 'ZFBAWU', 'LAPF_EMP', 'LAPF_COMP'):
                     prim_amt = getattr(slip.version_id, 'hao_primary_amount', 0.0) or getattr(slip.employee_id, 'hao_primary_amount', 0.0) or abs(line.total) or 0.0
                     sec_amt = getattr(slip.version_id, 'hao_secondary_amount', 0.0) or getattr(slip.employee_id, 'hao_secondary_amount', 0.0) or getattr(slip.employee_id, 'hao_secondary_wage', 0.0)
-                    if line.salary_rule_id.code == 'RENT':
+                    exchange_rate = slip.company_id.hao_exchange_rate or 1.0
+
+                    if rule_code == 'RENT':
                         pct = getattr(line.salary_rule_id, 'hao_rent_percentage', 5.0) or 5.0
+                        cap_prim = 0.0
+                        cap_sec = 0.0
+                    elif rule_code in ('NSSA', 'NSSA_COMP'):
+                        pct = getattr(line.salary_rule_id, 'hao_nssa_percentage', 4.5) or 4.5
+                        cap_prim = getattr(line.salary_rule_id, 'hao_nssa_base_cap', 700.0) or 700.0
+                        cap_sec = getattr(line.salary_rule_id, 'hao_nssa_secondary_cap', 0.0) or (round(cap_prim * exchange_rate, 2) if exchange_rate else 0.0)
+                    elif rule_code in ('NEC', 'NEC_COMP'):
+                        pct = getattr(line.salary_rule_id, 'hao_nec_pct', 1.5) or 1.5
+                        cap_prim = 0.0
+                        cap_sec = 0.0
+                    elif rule_code == 'UFAWUZ':
+                        pct = getattr(line.salary_rule_id, 'hao_rule_percentage', 2.0) or 2.0
+                        cap_prim = 0.0
+                        cap_sec = 0.0
+                    elif rule_code == 'ZFBAWU':
+                        pct = getattr(line.salary_rule_id, 'hao_rule_percentage', 4.0) or 4.0
+                        cap_prim = 0.0
+                        cap_sec = 0.0
+                    elif rule_code == 'LAPF_EMP':
+                        pct = getattr(line.salary_rule_id, 'hao_rule_percentage', 6.0) or 6.0
+                        cap_prim = 0.0
+                        cap_sec = 0.0
+                    elif rule_code == 'LAPF_COMP':
+                        pct = getattr(line.salary_rule_id, 'hao_rule_percentage', 17.3) or 17.3
+                        cap_prim = 0.0
+                        cap_sec = 0.0
                     else:
                         pct = getattr(line.salary_rule_id, 'hao_rule_percentage', 4.0) or 4.0
-                    prim_ded = - round(prim_amt * (pct / 100.0), 2)
-                    line.amount = prim_ded
-                    line.total = prim_ded
+                        cap_prim = 0.0
+                        cap_sec = 0.0
 
+                    is_comp = (line.category_id.code == 'COMP')
+
+                    # Primary (USD)
+                    base_calc_prim = min(prim_amt, cap_prim) if cap_prim > 0 else prim_amt
+                    calc_prim = round(base_calc_prim * (pct / 100.0), 2)
+                    prim_val = calc_prim if is_comp else -calc_prim
+                    line.amount = prim_val
+                    line.total = prim_val
+
+                    # Secondary (ZWG)
                     use_both = getattr(line.salary_rule_id, 'hao_use_both_currencies', True) and getattr(line.salary_rule_id, 'hao_currency_application', 'both') == 'both'
                     if use_both and sec_amt > 0:
-                        sec_ded = - round(sec_amt * (pct / 100.0), 2)
-                        line.hao_secondary_amount = sec_ded
-                        line.hao_secondary_total = sec_ded
+                        base_calc_sec = min(sec_amt, cap_sec) if cap_sec > 0 else sec_amt
+                        calc_sec = round(base_calc_sec * (pct / 100.0), 2)
+                        sec_val = calc_sec if is_comp else -calc_sec
+                        line.hao_secondary_amount = sec_val
+                        line.hao_secondary_total = sec_val
                     else:
                         line.hao_secondary_amount = 0.0
                         line.hao_secondary_total = 0.0
