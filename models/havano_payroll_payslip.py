@@ -483,6 +483,66 @@ class HrPayslip(models.Model):
                     line.hao_is_manual_secondary = True
                     continue
 
+                # PAYE & AIDS Levy Multi-Currency Calculation using ZIMRA Tax Tables
+                if rule_code == 'PAYE':
+                    use_both = getattr(line.salary_rule_id, 'hao_use_both_currencies', True) and getattr(line.salary_rule_id, 'hao_currency_application', 'both') == 'both'
+                    sec_currency = slip.company_id.hao_secondary_payroll_currency_id
+                    if use_both and sec_currency:
+                        # Find secondary gross & NSSA to compute secondary taxable income
+                        sec_gross = sum(l.hao_secondary_total for l in slip.line_ids if l.category_id.code in ('BASIC', 'ALW') and l.code not in ('GROSS', 'NET'))
+                        sec_nssa_line = slip.line_ids.filtered(lambda l: l.code == 'NSSA')
+                        sec_nssa = abs(sec_nssa_line.hao_secondary_total) if sec_nssa_line else 0.0
+                        sec_taxable = max(sec_gross - sec_nssa, 0.0)
+
+                        if sec_taxable > 0:
+                            contract_freq = slip.version_id.schedule_pay if slip.version_id else 'monthly'
+                            freq_map = {
+                                'daily': 'daily',
+                                'weekly': 'weekly',
+                                'bi-weekly': 'fortnightly',
+                                'monthly': 'monthly',
+                                'annually': 'yearly',
+                                'yearly': 'yearly',
+                            }
+                            zimra_freq = freq_map.get(contract_freq, 'monthly')
+                            brackets = self.env['zimra.tax.table'].search([
+                                ('currency_id', '=', sec_currency.id),
+                                ('frequency', '=', zimra_freq),
+                                ('active', '=', True)
+                            ], order='min_income asc')
+
+                            sec_paye = 0.0
+                            for bracket in brackets:
+                                if sec_taxable >= bracket.min_income and (bracket.max_income == 0 or sec_taxable <= bracket.max_income):
+                                    sec_paye = max((sec_taxable * bracket.rate / 100.0) - bracket.deduction, 0.0)
+                                    break
+                            sec_paye_val = -round(sec_paye, 2)
+                            line.hao_secondary_amount = sec_paye_val
+                            line.hao_secondary_total = sec_paye_val
+                        else:
+                            line.hao_secondary_amount = 0.0
+                            line.hao_secondary_total = 0.0
+                    else:
+                        line.hao_secondary_amount = 0.0
+                        line.hao_secondary_total = 0.0
+                    line.hao_is_manual_secondary = True
+                    continue
+
+                if rule_code == 'AIDS':
+                    use_both = getattr(line.salary_rule_id, 'hao_use_both_currencies', True) and getattr(line.salary_rule_id, 'hao_currency_application', 'both') == 'both'
+                    if use_both:
+                        paye_line = slip.line_ids.filtered(lambda l: l.code == 'PAYE')
+                        sec_paye = abs(paye_line.hao_secondary_total) if paye_line else 0.0
+                        pct = getattr(line.salary_rule_id, 'hao_aids_levy_pct', 3.0) or 3.0
+                        sec_aids = -round(sec_paye * (pct / 100.0), 2)
+                        line.hao_secondary_amount = sec_aids
+                        line.hao_secondary_total = sec_aids
+                    else:
+                        line.hao_secondary_amount = 0.0
+                        line.hao_secondary_total = 0.0
+                    line.hao_is_manual_secondary = True
+                    continue
+
                 if line.salary_rule_id.code in ('TRA', 'TRANS'):
                     use_both = getattr(line.salary_rule_id, 'hao_use_both_currencies', True) and getattr(line.salary_rule_id, 'hao_currency_application', 'both') == 'both'
                     if not use_both:
